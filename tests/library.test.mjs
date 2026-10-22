@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterCourses, filterResources, safeURL, escapeHTML, contributionURL, paginate } from '../assets/library.js';
+import { filterCourses, filterResources, safeURL, escapeHTML, contributionURL, contributionText, paginate } from '../assets/library.js';
 import { validateCatalog } from '../scripts/validate.mjs';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -30,14 +30,26 @@ test('链接拒绝脚本协议、相对越界及凭据，编码中文本地文�
   assert.equal(escapeHTML('<img src=x onerror="a">'), '&lt;img src=x onerror=&quot;a&quot;&gt;');
 });
 
-test('投稿草稿保留中文和特殊字符，提交确认保持未勾选', () => {
-  const draft = { course: '力学', title: '动量 & 能量 #1', type: '课程笔记', source: '我原创，CC BY 4.0', url: 'https://example.com/a?x=1&y=2' };
+test('投稿直接打开附件模板，中文信息预填到正确字段且不需要链接', () => {
+  const draft = { course: '力学（1007003065）', title: '动量 & 能量 #1', type: '课程笔记', year: '2026 上', source: '我原创，CC BY 4.0', note: '回忆版，答案未核对' };
   const url = new URL(contributionURL('https://github.com/CobaltJiang/OpenNNU', draft));
   assert.equal(url.origin, 'https://github.com');
   assert.match(url.searchParams.get('title'), /动量 & 能量 #1/);
-  assert.ok(url.searchParams.get('body').includes(draft.url));
-  assert.match(url.searchParams.get('body'), /- \[ \] 我确认/);
-  assert.ok(!url.searchParams.get('body').includes('- [x]'));
+  assert.equal(url.searchParams.get('template'), 'resource.yml');
+  assert.equal(url.searchParams.get('details'), contributionText(draft));
+  for (const value of Object.values(draft)) assert.ok(url.searchParams.get('details').includes(value));
+  assert.equal(url.searchParams.has('body'), false);
+  assert.ok(!contributionText(draft).includes('请在提交前添加文件或链接'));
+  assert.ok(!url.searchParams.get('details').includes('- [x]'));
+});
+
+test('投稿入口与实际 GitHub 模板共享预填字段，并要求真正上传附件', async () => {
+  const template = await readFile(new URL('../.github/ISSUE_TEMPLATE/resource.yml', import.meta.url), 'utf8');
+  const url = new URL(contributionURL('https://github.com/CobaltJiang/OpenNNU', { course: '力学' }));
+  assert.match(template, /type: upload\s+id: files[\s\S]*?validations:\s+required: true/);
+  assert.match(template, /type: textarea\s+id: details/);
+  assert.ok(url.searchParams.has('details'));
+  assert.ok(!template.includes('checked: true'));
 });
 
 test('正式目录使用真实数据，尚未收录时保持空数组', async () => {

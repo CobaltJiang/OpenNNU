@@ -1,4 +1,4 @@
-import { RESOURCE_TYPES, escapeHTML as e, filterCourses, filterResources, safeURL, contributionURL, paginate } from './library.js';
+import { RESOURCE_TYPES, escapeHTML as e, filterCourses, filterResources, safeURL, contributionURL, contributionText, paginate } from './library.js';
 
 const paths = {
   home: '<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
@@ -102,7 +102,7 @@ function savedView() {
 
 function courseLabel(course) { return `${course.name}（${course.code}）`; }
 function contributeView(courseId) {
-  return `<div class="page-header compact-header"><h1>贡献资料</h1></div><form class="form-card contribution-form" id="contribution-form"><div class="field"><label for="contribution-course">课程 *</label><input id="contribution-course" name="course" list="course-options" maxlength="150" required placeholder="输入课程名称或课程号" value="${e(courseById.has(courseId) ? courseLabel(courseById.get(courseId)) : '')}"><datalist id="course-options">${courses.map(course => `<option value="${e(courseLabel(course))}"></option>`).join('')}</datalist></div><div class="field"><label for="contribution-title">资料标题 *</label><input id="contribution-title" name="title" maxlength="80" required></div><div class="field-row"><div class="field"><label for="contribution-type">类型</label><select id="contribution-type" name="type">${RESOURCE_TYPES.map(type => `<option>${e(type)}</option>`).join('')}</select></div><div class="field"><label for="contribution-year">年份 / 学期</label><input id="contribution-year" name="year" maxlength="40"></div></div><div class="field"><label for="contribution-source">来源与分享许可 *</label><textarea id="contribution-source" name="source" maxlength="300" required placeholder="作者、原始出处及公开分享许可"></textarea></div><div class="field"><label for="contribution-url">文件链接</label><input id="contribution-url" name="url" type="url" pattern="https://.*" maxlength="500" placeholder="https://…"><small>也可在下一步添加附件。</small></div><div class="field"><label for="contribution-note">补充说明</label><textarea id="contribution-note" name="note" maxlength="300" placeholder="适用教材、是否有答案等"></textarea></div><label class="checkbox-field"><input type="checkbox" name="confirm" required><span>资料可公开分享，不含个人信息或未结束考试内容。</span></label><div class="form-actions"><button class="button button-primary" type="submit">前往 GitHub 投稿 ${icon('external')}</button><button class="button" type="button" id="copy-contribution">${icon('copy')}复制内容</button></div><p class="privacy-note">在 GitHub 确认提交，审核后收录。<a href="${e(site.repository)}/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">贡献指南 ↗</a></p><p class="form-status" id="form-status" role="status"></p></form>`;
+  return `<div class="page-header compact-header"><h1>贡献资料</h1></div><form class="form-card contribution-form" id="contribution-form"><div class="upload-step">${icon('files')}<div><strong>直接上传文件，无需网盘链接</strong><p>填写下方信息，下一步在 GitHub 选择或拖入附件。</p><small>需登录 GitHub · PDF / 文档 / ZIP ≤ 25 MB，图片 ≤ 10 MB</small></div></div><div class="field"><label for="contribution-course">课程 *</label><input id="contribution-course" name="course" list="course-options" maxlength="150" required placeholder="输入课程名称或课程号" value="${e(courseById.has(courseId) ? courseLabel(courseById.get(courseId)) : '')}"><datalist id="course-options">${courses.map(course => `<option value="${e(courseLabel(course))}"></option>`).join('')}</datalist></div><div class="field"><label for="contribution-title">资料标题 *</label><input id="contribution-title" name="title" maxlength="80" required></div><div class="field-row"><div class="field"><label for="contribution-type">类型</label><select id="contribution-type" name="type">${RESOURCE_TYPES.map(type => `<option>${e(type)}</option>`).join('')}</select></div><div class="field"><label for="contribution-year">年份 / 学期</label><input id="contribution-year" name="year" maxlength="40"></div></div><div class="field"><label for="contribution-source">来源与分享许可 *</label><textarea id="contribution-source" name="source" maxlength="300" required placeholder="作者、原始出处及公开分享许可"></textarea></div><div class="field"><label for="contribution-note">补充说明</label><textarea id="contribution-note" name="note" maxlength="300" placeholder="适用教材、是否有答案等"></textarea></div><div class="form-actions"><button class="button button-primary" type="submit">下一步：上传文件 ${icon('external')}</button><button class="button" type="button" id="copy-contribution">${icon('copy')}复制内容</button></div><p class="privacy-note">已填信息会自动带入上传页。附件提交后由维护者审核收录。<a href="${e(site.repository)}/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">贡献指南 ↗</a></p><p class="form-status" id="form-status" role="status"></p><a class="text-link upload-fallback" id="upload-fallback" target="_blank" rel="noopener noreferrer" hidden>打开文件上传页 ↗</a></form>`;
 }
 
 function aboutView() {
@@ -199,7 +199,7 @@ document.addEventListener('click', async event => {
   if (event.target.closest('#reset-course-filters,[data-reset-courses]')) resetCourses();
   if (event.target.closest('#reset-resource-filters')) { Object.assign(resourceFilters, { query: '', courseId: 'all', type: 'all', year: 'all', sort: 'newest' }); history.replaceState(null, '', '#/resources'); render(); }
   if (event.target.closest('#copy-contribution')) {
-    const content = new URL(contributionURL(site.repository, getDraft())).searchParams.get('body');
+    const content = contributionText(getDraft());
     try { await navigator.clipboard.writeText(content); $('#form-status').textContent = '已复制。'; toast('已复制'); }
     catch { $('#form-status').textContent = '未能复制，请使用 GitHub 投稿。'; }
   }
@@ -224,9 +224,11 @@ document.addEventListener('submit', event => {
   if (event.target.id !== 'contribution-form') return;
   event.preventDefault();
   const url = contributionURL(site.repository, getDraft());
-  if (url.length > 7600) { $('#form-status').textContent = '内容过长，请缩短说明，或复制到 GitHub Issue。'; return; }
+  if (url.length > 7600) { $('#form-status').textContent = '内容过长，请缩短说明，或先复制内容。'; return; }
+  $('#upload-fallback').href = url;
+  $('#upload-fallback').hidden = false;
   window.open(url, '_blank', 'noopener,noreferrer');
-  $('#form-status').textContent = '请在 GitHub 检查并提交。';
+  $('#form-status').textContent = '在 GitHub 上传页选择或拖入文件，确认后提交。';
 });
 
 $('#menu-toggle').addEventListener('click', () => { const open = !$('#sidebar').classList.contains('open'); $('#sidebar').classList.toggle('open', open); $('#sidebar').inert = !open && matchMedia('(max-width:720px)').matches; $('#scrim').hidden = !open; $('#menu-toggle').setAttribute('aria-expanded', open); $('#menu-toggle').setAttribute('aria-label', open ? '关闭导航' : '打开导航'); });

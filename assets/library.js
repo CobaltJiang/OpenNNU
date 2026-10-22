@@ -43,8 +43,11 @@ export function safeURL(value, { local = true } = {}) {
   try { const url = new URL(value); return url.protocol === 'https:' && !url.username && !url.password ? url.href : null; } catch { return null; }
 }
 
+export function contributionText(draft) {
+  return ['## 资料信息', `- 课程：${draft.course || '待填写'}`, `- 标题：${draft.title || '待填写'}`, `- 类型：${draft.type || '待填写'}`, `- 年份 / 学期：${draft.year || '待填写'}`, '', '## 来源与分享许可', draft.source || '待填写', '', '## 补充说明', draft.note || '无'].join('\n');
+}
+
 export function contributionURL(repository, draft) {
-  const lines = ['## 资料信息', `- 课程：${draft.course || '待填写'}`, `- 标题：${draft.title || '待填写'}`, `- 类型：${draft.type || '待填写'}`, `- 年份 / 学期：${draft.year || '待填写'}`, '', '## 来源与分享许可', draft.source || '请说明作者、来源和允许公开分享的依据。', '', '## 文件或公开链接', draft.url || '请在提交前添加文件或链接。', '', '## 补充说明', draft.note || '无', '', '- [ ] 我确认上述来源信息准确，且资料可按所说明的许可公开分享。', '- [ ] 我已检查文件，不包含个人信息或未结束考试的内容。'];
-  const params = new URLSearchParams({ title: `[资料投稿] ${draft.course || '课程'} · ${draft.title || '资料标题'}`, body: lines.join('\n') });
+  const params = new URLSearchParams({ template: 'resource.yml', title: `[资料投稿] ${draft.course || '课程'} · ${draft.title || '资料标题'}`, details: contributionText(draft) });
   return `${repository}/issues/new?${params}`;
 }

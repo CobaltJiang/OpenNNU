@@ -48,7 +48,7 @@ Web 界面支持按课程名、课程号和教师检索，按开课单位、校�
 
 ## 开始贡献
 
-无需会写代码：在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 填写信息，生成 GitHub Issue 草稿，检查后提交；也可以直接使用仓库的 [资料投稿模板](https://github.com/CobaltJiang/OpenNNU/issues/new?template=resource.yml)。
+无需会写代码：在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 填写信息，点击“下一步：上传文件”，在 GitHub 选择或拖入附件后提交，不用先上传网盘或填写链接。也可以直接打开 [文件上传页](https://github.com/CobaltJiang/OpenNNU/issues/new?template=resource.yml)。需要登录 GitHub。
 
 熟悉 Git 的同学可阅读 [贡献指南](CONTRIBUTING.md) 后提交 Pull Request。欢迎原创笔记、复习提纲、习题解析和取得分享许可的往年试卷。
 
