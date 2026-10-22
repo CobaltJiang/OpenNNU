@@ -135,8 +135,10 @@ function updateResourceResults() {
 
 function closeMenu() {
   $('#sidebar').classList.remove('open');
+  $('#sidebar').inert = matchMedia('(max-width:720px)').matches;
   $('#scrim').hidden = true;
   $('#menu-toggle').setAttribute('aria-expanded', 'false');
+  $('#menu-toggle').setAttribute('aria-label', '打开导航');
 }
 
 function updateSavedCount() {
@@ -235,7 +237,8 @@ document.addEventListener('submit', event => {
   $('#form-status').textContent = '请在 GitHub 页面检查草稿、添加文件并提交。如果未出现新页面，请允许此站点打开投稿页面。';
 });
 
-$('#menu-toggle').addEventListener('click', () => { const open = !$('#sidebar').classList.contains('open'); $('#sidebar').classList.toggle('open', open); $('#scrim').hidden = !open; $('#menu-toggle').setAttribute('aria-expanded', open); });
+$('#menu-toggle').addEventListener('click', () => { const open = !$('#sidebar').classList.contains('open'); $('#sidebar').classList.toggle('open', open); $('#sidebar').inert = !open && matchMedia('(max-width:720px)').matches; $('#scrim').hidden = !open; $('#menu-toggle').setAttribute('aria-expanded', open); $('#menu-toggle').setAttribute('aria-label', open ? '关闭导航' : '打开导航'); });
+matchMedia('(max-width:720px)').addEventListener('change', closeMenu);
 $('#scrim').addEventListener('click', closeMenu);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') { closeMenu(); $('#menu-toggle').focus(); }
