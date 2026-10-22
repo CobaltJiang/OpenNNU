@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenNNU 审核台</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="bar">
+  <h1>OpenNNU 审核台</h1>
+  <p class="sub">本机专用 · 待审文件不公开 · 「通过」会写入 main 并立即公开</p>
+  <div class="bar-actions">
+    <span id="count" class="count">…</span>
+    <button id="refresh" class="button">刷新</button>
+  </div>
+</header>
+<main id="list" class="list"><p class="empty">正在读取待审队列…</p></main>
+<div id="toast" class="toast" hidden></div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

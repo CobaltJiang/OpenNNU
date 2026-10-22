@@ -10,7 +10,8 @@
     "check": "node scripts/validate.mjs",
     "test": "node --test tests/*.test.mjs",
     "build": "node scripts/build.mjs",
-    "preview": "node scripts/serve.mjs --dist"
+    "preview": "node scripts/serve.mjs --dist",
+    "review": "node tools/review/server.mjs"
   },
   "engines": { "node": ">=22" },
   "license": "MIT"

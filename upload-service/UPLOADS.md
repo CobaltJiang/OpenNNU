@@ -6,7 +6,15 @@
 
 ## 本机审核（PowerShell 7）
 
-上传管理密钥只保存在 Sites 服务端及本机 `.local/upload-admin.xml`（Windows DPAPI 加密，限当前 Windows 用户解密）。不要提交或分享该文件。换电脑须安全配置新管理密钥，并同步更新 Sites 的 `UPLOAD_ADMIN_KEY`，重新部署后生效。
+推荐用本地审核台，省去逐个敲命令：
+
+```powershell
+npm run review      # 打开 http://127.0.0.1:4180
+```
+
+审核台只监听 `127.0.0.1`，管理密钥留在这个 Node 进程的内存里，不下发浏览器；页面里能看原始来源、预览 PDF、改公开字段，点「通过并公开」才会调用下面的 Publish。发布走的是同一套脚本，行为一致。
+
+也可以继续用命令行。上传管理密钥只保存在 Sites 服务端及本机 `.local/upload-admin.xml`（Windows DPAPI 加密，限当前 Windows 用户解密）。不要提交或分享该文件。换电脑须安全配置新管理密钥，并同步更新 Sites 的 `UPLOAD_ADMIN_KEY`，重新部署后生效。
 
 在仓库根目录运行：
 
@@ -15,6 +23,8 @@ pwsh -File scripts/upload-admin.ps1 -Mode List
 pwsh -File scripts/upload-admin.ps1 -Mode Download -Id <投稿编号>
 # 先核对下载文件、分享许可、课程及是否含个人信息；下列操作会公开文件。
 pwsh -File scripts/upload-admin.ps1 -Mode Publish -Id <投稿编号> -CourseId mechanics -License 'CC BY 4.0' -Origin 学生原创 -AnswerStatus 不适用
+# 投稿原文含可识别人名或未获授权时，用 -Title / -Source 改写公开展示的字段
+# pwsh -File scripts/upload-admin.ps1 -Mode Publish -Id <编号> -CourseId <课程 id> -License '未获明确授权（仅收录，供个人学习）' -Origin 其他 -AnswerStatus 不适用 -Title '课程 笔记' -Source '学生整理，来源不详，未获明确授权'
 pwsh -File scripts/upload-admin.ps1 -Mode Reject -Id <投稿编号>
 ```
 

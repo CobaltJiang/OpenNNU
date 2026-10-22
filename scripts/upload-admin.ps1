@@ -3,10 +3,14 @@ param(
   [string]$Id,
   [string]$CourseId,
   [string]$License,
+  [string]$Title,
+  [string]$Source,
   [ValidateSet('原卷','回忆版','学生原创','教师授权','其他')][string]$Origin='其他',
   [ValidateSet('无答案','答案未核对','答案已校对','不适用')][string]$AnswerStatus='答案未核对'
 )
 $ErrorActionPreference='Stop'
+# 输出被管道捕获时按 UTF-8 编码，避免本地工具收到乱码。
+[Console]::OutputEncoding=[Text.Encoding]::UTF8
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $site=Get-Content data/site.json -Raw | ConvertFrom-Json
 $service=$site.uploadService.TrimEnd('/')
@@ -67,7 +71,10 @@ for($index=0;$index -lt $item.files.Count;$index++) {
   $blob=Invoke-GitHub "$repo/git/blobs" 'POST' @{content=[Convert]::ToBase64String([IO.File]::ReadAllBytes($localFile));encoding='base64'}
   $path="courses/$CourseId/submissions/$Id/$index$extension"
   $tree+=@{path=$path;mode='100644';type='blob';sha=$blob.sha}
-  $resources+=@{id="upload-$Id-$index";submissionId=$Id;courseId=$CourseId;title="$($item.metadata.title) · $($file.name)";type=$item.metadata.type;year=$(if($item.metadata.year){$item.metadata.year}else{'年份待核'});source=$item.metadata.source;license=$License;permission='confirmed';added=(Get-Date -Format 'yyyy-MM-dd');origin=$Origin;answerStatus=$AnswerStatus;url=$path}
+  # 维护者可改写公开展示的标题与来源：投稿原文里可能含可识别到具体个人的信息。
+  $displayTitle=if($Title){$Title}else{"$($item.metadata.title) · $($file.name)"}
+  $displaySource=if($Source){$Source}else{$item.metadata.source}
+  $resources+=@{id="upload-$Id-$index";submissionId=$Id;courseId=$CourseId;title=$displayTitle;type=$item.metadata.type;year=$(if($item.metadata.year){$item.metadata.year}else{'年份待核'});source=$displaySource;license=$License;permission='confirmed';added=(Get-Date -Format 'yyyy-MM-dd');origin=$Origin;answerStatus=$AnswerStatus;url=$path}
 }
 $tree+=@{path='data/resources.json';mode='100644';type='blob';content=($resources|ConvertTo-Json -Depth 15 -AsArray)}
 $newTree=Invoke-GitHub "$repo/git/trees" 'POST' @{base_tree=$commit.tree.sha;tree=$tree}
