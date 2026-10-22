@@ -2,6 +2,7 @@ import { cp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateCatalog } from './validate.mjs';
+import { versionWebAssets } from './web-assets.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = resolve(root, 'dist');
@@ -10,6 +11,7 @@ const { courses, resources } = await validateCatalog();
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 for (const name of ['index.html', 'assets', 'data']) await cp(resolve(root, name), resolve(output, name), { recursive: true });
+await versionWebAssets(root,output);
 // Publish only files explicitly listed in the reviewed resource catalog.
 for (const resource of resources.filter(item => item.url.startsWith('courses/'))) {
   const destination = resolve(output, resource.url);

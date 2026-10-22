@@ -9,7 +9,7 @@ body:
     id: files
     attributes:
       label: 上传文件
-      description: 点击选择或拖入文件。PDF、Office 文档、ZIP 和文本不超过 25 MB，图片不超过 10 MB。
+      description: 此备用入口受 GitHub 附件限制（文档 25 MB、图片 10 MB），与站内上传不同。较大文件请使用 https://cobaltjiang.github.io/OpenNNU/#/contribute （单个 90 MB、合计 300 MB）。
     validations:
       required: true
       accept: ".pdf,.docx,.xlsx,.pptx,.zip,.gz,.tar.gz,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv"

@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import { handleUpload, validateDraft } from '../upload-service/lib/uploads.mjs';
 import { validateFiles, submitUpload } from '../assets/uploads.js';
+import { MAX_FILE_BYTES, MAX_TOTAL_BYTES, UPLOAD_LIMIT_HINT } from '../upload-service/lib/upload-policy.mjs';
 
 function fixture() {
   const db=new DatabaseSync(':memory:');
@@ -16,7 +17,7 @@ const origin='https://cobaltjiang.github.io', base='https://upload.example';
 function draft() {const form=new FormData();for(const [key,value] of Object.entries({course:'力学（1007003065）',title:'测试资料',type:'课程笔记',year:'2026',source:'测试自编，允许分享',note:'',permission:'yes'}))form.set(key,value);form.append('files',new File(['hello'],'笔记.txt'));return form;}
 test('前后端均限制文件数量、格式、大小和明确分享许可',()=>{
   assert.equal(validateFiles([{name:'笔记.pdf',size:100}]),'');
-  for(const files of [[],[{name:'x.exe',size:5}],[{name:'x.pdf',size:51*1024*1024}],[{name:'x.pdf',size:0}],Array(6).fill({name:'x.pdf',size:1})])assert.ok(validateFiles(files));
+  for(const files of [[],[{name:'x.exe',size:5}],[{name:'x.pdf',size:MAX_FILE_BYTES+1}],[{name:'x.pdf',size:0}],Array(6).fill({name:'x.pdf',size:1})])assert.ok(validateFiles(files));
   const form=draft(); assert.equal(validateDraft(form).draft.course,'力学（1007003065）');form.delete('permission');assert.throws(()=>validateDraft(form),/许可/);
   const traversal=draft();traversal.set('files',new File(['x'],'../bad.txt'));assert.throws(()=>validateDraft(traversal),/文件名/);
 });
@@ -39,6 +40,10 @@ test('匿名上传持久写入、重试不重复、管理员回读、拒绝清�
 });
 test('错误来源、失效会话、滥用配额和无许可上传均拒绝',async()=>{
   const {env,db}=fixture();try{
+    const rejected=await handleUpload(new Request(`${base}/api/ticket`,{method:'POST',headers:{Origin:'https://evil.example'}}),env);
+    assert.equal(rejected.status,403);
+    // 被拒的来源也要能读到原因，否则浏览器只会显示 Failed to fetch。
+    assert.equal(rejected.headers.get('Access-Control-Allow-Origin'),'https://evil.example');
     assert.equal((await handleUpload(new Request(`${base}/api/ticket`,{method:'POST',headers:{Origin:'https://evil.example'}}),env)).status,403);
     const request=()=>new Request(`${base}/api/ticket`,{method:'POST',headers:{Origin:origin}});
     let ticket;for(let i=0;i<10;i++){const r=await handleUpload(request(),env);assert.equal(r.status,200);ticket=(await r.json()).ticket;}
@@ -50,14 +55,15 @@ test('错误来源、失效会话、滥用配额和无许可上传均拒绝',asy
 });
 test('网页主投稿入口是真文件表单，不再跳转 GitHub 或包含令牌',async()=>{
   const app=await readFile(new URL('../assets/app.js',import.meta.url),'utf8');
-  assert.match(app,/type="file" name="files" multiple required/);assert.match(app,/submitUpload\(site.uploadService/);assert.match(app,/单个 ≤ 50 MB · 合计 ≤ 100 MB/);assert.ok(!app.includes('window.open(url'));assert.ok(!app.includes('需登录 GitHub'));
+  assert.match(app,/type="file" name="files" multiple required/);assert.match(app,/submitUpload\(site.uploadService/);assert.ok(app.includes('${e(UPLOAD_LIMIT_HINT)}'));assert.equal(UPLOAD_LIMIT_HINT,'1–5 个文件 · 单个 ≤ 90 MB · 合计 ≤ 300 MB');assert.ok(!app.includes('window.open(url'));assert.ok(!app.includes('需登录 GitHub'));
 });
-test('前后端一致接受 20 MB 和 50 MB，拒绝超单文件及 100 MB 总量边界',()=>{
+test('提示与前后端共用策略，接受 90 MB 与合计 300 MB 并拒绝越界',()=>{
   const mb=1024*1024;
   const check=files=>{const form=draft();return validateDraft({get:key=>form.get(key),getAll:()=>files});};
-  for(const size of [20*mb,50*mb]){const files=[{name:'资料.pdf',size}];assert.equal(validateFiles(files),'');assert.equal(check(files).files[0].size,size);}
-  const full=[{name:'a.pdf',size:50*mb},{name:'b.pdf',size:50*mb}];assert.equal(validateFiles(full),'');assert.equal(check(full).files.length,2);
-  for(const files of [[{name:'x.pdf',size:50*mb+1}],[...full,{name:'x.txt',size:1}]]){assert.ok(validateFiles(files));assert.throws(()=>check(files),/50 MB|100 MB/);}
+  for(const size of [20*mb,50*mb,MAX_FILE_BYTES]){const files=[{name:'资料.pdf',size}];assert.equal(validateFiles(files),'');assert.equal(check(files).files[0].size,size);}
+  const full=Array.from({length:3},(_,i)=>({name:`${i}.pdf`,size:MAX_FILE_BYTES}));full.push({name:'last.pdf',size:MAX_TOTAL_BYTES-3*MAX_FILE_BYTES});
+  assert.equal(validateFiles(full),'');assert.equal(check(full).files.length,4);
+  for(const files of [[{name:'x.pdf',size:MAX_FILE_BYTES+1}],[...full,{name:'x.txt',size:1}]]){assert.ok(validateFiles(files));assert.throws(()=>check(files),/90 MB|300 MB/);}
 });
 test('50 MB 文件流式接收，完整校验后才进入待审，支持安全重试',async()=>{
   const {env,db,objects}=fixture();try{
@@ -106,4 +112,16 @@ test('浏览器传输协议逐个发送原文件，并在全部完成后提交�
     const manifest=JSON.parse(calls[1].options.body);assert.deepEqual(manifest.files,[{name:'笔记.txt',size:5},{name:'第二份.txt',size:5}]);
     assert.ok(calls[2].url.endsWith('/complete'));assert.deepEqual(progress,[50,100]);
   }finally{globalThis.fetch=originalFetch;if(originalXHR===undefined)delete globalThis.XMLHttpRequest;else globalThis.XMLHttpRequest=originalXHR;}
+});
+
+test('连接断开时保留已选文件，并给出重试与备用提交渠道',async()=>{
+  const app=await readFile(new URL('../assets/app.js',import.meta.url),'utf8');
+  const network=await readFile(new URL('../assets/network.js',import.meta.url),'utf8');
+  assert.match(app,/id="upload-help" *hidden/);
+  assert.match(app,/data-retry-upload/);
+  assert.match(app,/contributionURL\(site\.repository,draftOf\(form\)\)/);
+  assert.match(app,/备用入口受 GitHub 附件限制/);
+  assert.match(network,/networkMessage/);
+  const uploads=await readFile(new URL('../assets/uploads.js',import.meta.url),'utf8');
+  for(const step of ['获取上传凭据','建立上传会话','确认提交'])assert.ok(uploads.includes(`step:'${step}'`),step);
 });

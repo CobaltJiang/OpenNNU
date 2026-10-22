@@ -1,5 +1,6 @@
-export const MAX_FILE_BYTES = 50 * 1024 * 1024;
-export const MAX_BYTES = 100 * 1024 * 1024;
+import { MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, FILE_SIZE_ERROR, TOTAL_SIZE_ERROR } from './upload-policy.mjs';
+export { MAX_FILE_BYTES };
+export const MAX_BYTES = MAX_TOTAL_BYTES;
 export const EXTENSIONS = /\.(pdf|docx|xlsx|pptx|zip|png|jpe?g|webp|txt|csv)$/i;
 const origins = new Set(['https://cobaltjiang.github.io', 'http://127.0.0.1:4174', 'http://127.0.0.1:4173']);
 const json = (data, status = 200, headers = {}) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...headers } });
@@ -15,20 +16,22 @@ export function validateDraft(form) {
   if (!draft.course || !draft.title || !draft.source || form.get('permission') !== 'yes') fail('请填写资料信息并确认分享许可');
   if (form.get('website')) fail('提交无效');
   const files = form.getAll('files');
-  if (!files.length || files.length > 5) fail('请选择 1–5 个文件');
+  if (!files.length || files.length > MAX_FILES) fail(`请选择 1–${MAX_FILES} 个文件`);
   let total = 0;
   for (const file of files) {
     if (typeof file === 'string' || !file.name || file.name.length > 160 || /[\x00-\x1f/\\]/.test(file.name) || !EXTENSIONS.test(file.name)) fail('不支持此文件名或格式');
-    if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MAX_FILE_BYTES) fail('单文件须为 1 B–50 MB');
+    if (!Number.isSafeInteger(file.size) || file.size < 1 || file.size > MAX_FILE_BYTES) fail(FILE_SIZE_ERROR);
     total += file.size;
   }
-  if (total > MAX_BYTES) fail('文件总大小不能超过 100 MB');
+  if (total > MAX_BYTES) fail(TOTAL_SIZE_ERROR);
   return { draft, files };
 }
 export async function handleUpload(request, env) {
   const url = new URL(request.url), origin = request.headers.get('Origin');
   const allowed = origins.has(origin) || origin === url.origin;
-  const cors = allowed ? { 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Content-Type, X-Upload-Ticket', 'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS' } : {};
+  // Always answer with CORS headers: a rejected origin must surface as "不允许的来源" in the page,
+  // not as an opaque "Failed to fetch" that looks like the whole service is down.
+  const cors = { 'Access-Control-Allow-Origin': origin || '*', 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Content-Type, X-Upload-Ticket', 'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS' };
   try {
     if (!env.DB || !env.BUCKET || !env.UPLOAD_ADMIN_KEY) fail('上传服务尚未配置', 503);
     if (url.pathname.startsWith('/api/admin')) return await admin(request, env);

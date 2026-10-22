@@ -48,7 +48,7 @@ Web 界面支持按课程名、课程号和教师检索，按开课单位、校�
 
 ## 开始贡献
 
-在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 选择文件并填写资料信息，直接上传，不需要 GitHub 或 ChatGPT 账号，也不用填写网盘链接。文件先私下待审，审核通过后由维护者的 GitHub 账号收录。每次 1–5 个文件，单个不超过 50 MB、合计不超过 100 MB。
+在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 选择文件并填写资料信息，直接上传，不需要 GitHub 或 ChatGPT 账号，也不用填写网盘链接。文件先私下待审，审核通过后由维护者的 GitHub 账号收录。每次 1–5 个文件，单个不超过 90 MB、合计不超过 300 MB。
 
 熟悉 Git 的同学可阅读 [贡献指南](CONTRIBUTING.md) 后提交 Pull Request。欢迎原创笔记、复习提纲、习题解析和取得分享许可的往年试卷。
 
