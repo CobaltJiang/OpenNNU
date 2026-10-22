@@ -118,7 +118,7 @@ function updateCourseResults() {
   const page = paginate(results, coursePage);
   coursePage = page.page;
   $('#course-result-count').textContent = `${number(page.total)} 门课程${page.total ? ` · ${number((page.page - 1) * 24 + 1)}–${number(Math.min(page.page * 24, page.total))}` : ''}`;
-  $('#course-results').innerHTML = page.items.length ? page.items.map(courseCard).join('') : emptyState('没有匹配的课程', '<button class="button" id="reset-course-filters">重置筛选</button>', 'search');
+  $('#course-results').innerHTML = page.items.length ? page.items.map(courseCard).join('') : emptyState('没有匹配的课程', '<button class="button" data-reset-courses>重置筛选</button>', 'search');
   $('#course-results').classList.toggle('no-results', !page.items.length);
   const pages = [...new Set([1, page.page - 1, page.page, page.page + 1, page.pages].filter(item => item > 0 && item <= page.pages))].sort((a, b) => a - b);
   let last = 0;
@@ -196,7 +196,7 @@ document.addEventListener('click', async event => {
   const pageButton = event.target.closest('[data-page]');
   if (pageButton && !pageButton.disabled) { coursePage = Number(pageButton.dataset.page); updateCourseResults(); $('#course-heading').scrollIntoView({ block: 'start' }); }
   if (event.target.closest('#clear-search')) { $('#library-search').value = ''; $('#library-search').dispatchEvent(new Event('input', { bubbles: true })); $('#library-search').focus(); }
-  if (event.target.closest('#reset-course-filters')) resetCourses();
+  if (event.target.closest('#reset-course-filters,[data-reset-courses]')) resetCourses();
   if (event.target.closest('#reset-resource-filters')) { Object.assign(resourceFilters, { query: '', courseId: 'all', type: 'all', year: 'all', sort: 'newest' }); history.replaceState(null, '', '#/resources'); render(); }
   if (event.target.closest('#copy-contribution')) {
     const content = new URL(contributionURL(site.repository, getDraft())).searchParams.get('body');
