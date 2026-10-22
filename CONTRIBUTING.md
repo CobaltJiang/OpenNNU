@@ -5,10 +5,10 @@
 ## 不使用 Git 的投稿方式
 
 1. 打开 [投稿页面](https://cobaltjiang.github.io/OpenNNU/#/contribute)，填写课程、资料名称、类型、来源与分享许可。
-2. 点击“下一步：上传文件”，登录 GitHub。已填信息自动带入，在“上传文件”栏点击选择或拖入附件，不用先传网盘或填写链接。
-3. 确认分享许可并提交。维护者审核后收录。PDF、Office 文档、ZIP 与文本文件上限为 25 MB，图片上限为 10 MB。
+2. 在页面选择文件并点击“上传资料”，无需登录任何账号，也不用先传网盘或填写链接。单个文件 ≤ 8 MB，每次最多 5 个、合计 ≤ 20 MB。
+3. 确认分享许可并提交，保存投稿编号。维护者审核后收录。
 
-也可以直接使用 [GitHub 资料投稿模板](https://github.com/CobaltJiang/OpenNNU/issues/new?template=resource.yml)。如果资料不适合公开，请不要在公开 Issue 中上传全文。
+上传文件先私下待审，审核通过后由维护者的 GitHub 账号提交到公开仓库。仍可选用 [GitHub 资料投稿模板](https://github.com/CobaltJiang/OpenNNU/issues/new?template=resource.yml)，但它不是必经步骤。不要上传不适合公开分享的资料。
 
 ## 欢迎哪些内容
 

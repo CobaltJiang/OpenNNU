@@ -30,7 +30,7 @@ test('链接拒绝脚本协议、相对越界及凭据，编码中文本地文�
   assert.equal(escapeHTML('<img src=x onerror="a">'), '&lt;img src=x onerror=&quot;a&quot;&gt;');
 });
 
-test('投稿直接打开附件模板，中文信息预填到正确字段且不需要链接', () => {
+test('备用 GitHub 投稿模板的中文信息预填到正确字段', () => {
   const draft = { course: '力学（1007003065）', title: '动量 & 能量 #1', type: '课程笔记', year: '2026 上', source: '我原创，CC BY 4.0', note: '回忆版，答案未核对' };
   const url = new URL(contributionURL('https://github.com/CobaltJiang/OpenNNU', draft));
   assert.equal(url.origin, 'https://github.com');
@@ -43,7 +43,7 @@ test('投稿直接打开附件模板，中文信息预填到正确字段且不�
   assert.ok(!url.searchParams.get('details').includes('- [x]'));
 });
 
-test('投稿入口与实际 GitHub 模板共享预填字段，并要求真正上传附件', async () => {
+test('备用 GitHub 投稿模板要求真正上传附件', async () => {
   const template = await readFile(new URL('../.github/ISSUE_TEMPLATE/resource.yml', import.meta.url), 'utf8');
   const url = new URL(contributionURL('https://github.com/CobaltJiang/OpenNNU', { course: '力学' }));
   assert.match(template, /type: upload\s+id: files[\s\S]*?validations:\s+required: true/);

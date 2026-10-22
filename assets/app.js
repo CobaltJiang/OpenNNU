@@ -1,4 +1,5 @@
-import { RESOURCE_TYPES, escapeHTML as e, filterCourses, filterResources, safeURL, contributionURL, contributionText, paginate } from './library.js';
+import { RESOURCE_TYPES, escapeHTML as e, filterCourses, filterResources, safeURL, paginate } from './library.js';
+import { FILE_ACCEPT, validateFiles, submitUpload } from './uploads.js';
 
 const paths = {
   home: '<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
@@ -102,7 +103,7 @@ function savedView() {
 
 function courseLabel(course) { return `${course.name}（${course.code}）`; }
 function contributeView(courseId) {
-  return `<div class="page-header compact-header"><h1>贡献资料</h1></div><form class="form-card contribution-form" id="contribution-form"><div class="upload-step">${icon('files')}<div><strong>直接上传文件，无需网盘链接</strong><p>填写下方信息，下一步在 GitHub 选择或拖入附件。</p><small>需登录 GitHub · PDF / 文档 / ZIP ≤ 25 MB，图片 ≤ 10 MB</small></div></div><div class="field"><label for="contribution-course">课程 *</label><input id="contribution-course" name="course" list="course-options" maxlength="150" required placeholder="输入课程名称或课程号" value="${e(courseById.has(courseId) ? courseLabel(courseById.get(courseId)) : '')}"><datalist id="course-options">${courses.map(course => `<option value="${e(courseLabel(course))}"></option>`).join('')}</datalist></div><div class="field"><label for="contribution-title">资料标题 *</label><input id="contribution-title" name="title" maxlength="80" required></div><div class="field-row"><div class="field"><label for="contribution-type">类型</label><select id="contribution-type" name="type">${RESOURCE_TYPES.map(type => `<option>${e(type)}</option>`).join('')}</select></div><div class="field"><label for="contribution-year">年份 / 学期</label><input id="contribution-year" name="year" maxlength="40"></div></div><div class="field"><label for="contribution-source">来源与分享许可 *</label><textarea id="contribution-source" name="source" maxlength="300" required placeholder="作者、原始出处及公开分享许可"></textarea></div><div class="field"><label for="contribution-note">补充说明</label><textarea id="contribution-note" name="note" maxlength="300" placeholder="适用教材、是否有答案等"></textarea></div><div class="form-actions"><button class="button button-primary" type="submit">下一步：上传文件 ${icon('external')}</button><button class="button" type="button" id="copy-contribution">${icon('copy')}复制内容</button></div><p class="privacy-note">已填信息会自动带入上传页。附件提交后由维护者审核收录。<a href="${e(site.repository)}/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">贡献指南 ↗</a></p><p class="form-status" id="form-status" role="status"></p><a class="text-link upload-fallback" id="upload-fallback" target="_blank" rel="noopener noreferrer" hidden>打开文件上传页 ↗</a></form>`;
+  return `<div class="page-header compact-header"><h1>贡献资料</h1></div><form class="form-card contribution-form" id="contribution-form"><div class="upload-step">${icon('files')}<div><strong>直接上传，无需账号</strong><small>1–5 个文件 · 单个 ≤ 8 MB · 合计 ≤ 20 MB</small></div></div><div class="field"><label for="contribution-files">选择文件 *</label><input id="contribution-files" type="file" name="files" multiple required accept="${FILE_ACCEPT}"><p id="file-summary" class="privacy-note"></p></div><div class="field"><label for="contribution-course">课程 *</label><input id="contribution-course" name="course" list="course-options" maxlength="150" required placeholder="输入课程名称或课程号" value="${e(courseById.has(courseId) ? courseLabel(courseById.get(courseId)) : '')}"><datalist id="course-options">${courses.map(course => `<option value="${e(courseLabel(course))}"></option>`).join('')}</datalist></div><div class="field"><label for="contribution-title">资料标题 *</label><input id="contribution-title" name="title" maxlength="80" required></div><div class="field-row"><div class="field"><label for="contribution-type">类型</label><select id="contribution-type" name="type">${RESOURCE_TYPES.map(type => `<option>${e(type)}</option>`).join('')}</select></div><div class="field"><label for="contribution-year">年份 / 学期</label><input id="contribution-year" name="year" maxlength="40"></div></div><div class="field"><label for="contribution-source">来源与分享许可 *</label><textarea id="contribution-source" name="source" maxlength="300" required placeholder="作者、原始出处及公开分享许可"></textarea></div><div class="field"><label for="contribution-note">补充说明</label><textarea id="contribution-note" name="note" maxlength="300" placeholder="适用教材、是否有答案等"></textarea></div><label class="permission-check"><input type="checkbox" name="permission" value="yes" required>我有权公开分享，文件不含个人隐私、未结束的考试或保密资料。</label><label class="upload-honeypot" aria-hidden="true">网站<input name="website" tabindex="-1" autocomplete="off"></label><div class="form-actions"><button class="button button-primary" type="submit">上传资料</button></div><p class="privacy-note">文件先私下待审；审核通过后由维护者账号提交至公开仓库。</p><progress id="upload-progress" max="100" value="0" hidden aria-label="上传进度"></progress><p class="form-status" id="form-status" role="status" aria-live="polite"></p></form>`;
 }
 
 function aboutView() {
@@ -198,11 +199,6 @@ document.addEventListener('click', async event => {
   if (event.target.closest('#clear-search')) { $('#library-search').value = ''; $('#library-search').dispatchEvent(new Event('input', { bubbles: true })); $('#library-search').focus(); }
   if (event.target.closest('#reset-course-filters,[data-reset-courses]')) resetCourses();
   if (event.target.closest('#reset-resource-filters')) { Object.assign(resourceFilters, { query: '', courseId: 'all', type: 'all', year: 'all', sort: 'newest' }); history.replaceState(null, '', '#/resources'); render(); }
-  if (event.target.closest('#copy-contribution')) {
-    const content = contributionText(getDraft());
-    try { await navigator.clipboard.writeText(content); $('#form-status').textContent = '已复制。'; toast('已复制'); }
-    catch { $('#form-status').textContent = '未能复制，请使用 GitHub 投稿。'; }
-  }
 });
 
 document.addEventListener('input', event => {
@@ -213,22 +209,32 @@ document.addEventListener('input', event => {
 });
 
 document.addEventListener('change', event => {
+  if (event.target.id === 'contribution-files') {
+    const files = [...event.target.files];
+    uploadTicket = null;
+    $('#file-summary').textContent = validateFiles(files) || files.map(file => `${file.name}（${(file.size/1024/1024).toFixed(2)} MB）`).join(' · ');
+  }
   const courseField = { 'course-department': 'department', 'course-campus': 'campus', 'course-type': 'type', 'course-sort': 'sort', 'with-resources': 'withResources' }[event.target.id];
   if (courseField) { courseFilters[courseField] = courseField === 'withResources' ? event.target.checked : event.target.value; coursePage = 1; updateCourseResults(); }
   const resourceField = { 'resource-course': 'courseId', 'resource-type': 'type', 'resource-year': 'year', 'resource-sort': 'sort' }[event.target.id];
   if (resourceField) { resourceFilters[resourceField] = event.target.value; updateResourceResults(); }
 });
 
-function getDraft() { return Object.fromEntries(new FormData($('#contribution-form')).entries()); }
-document.addEventListener('submit', event => {
+let uploadTicket = null;
+document.addEventListener('submit', async event => {
   if (event.target.id !== 'contribution-form') return;
   event.preventDefault();
-  const url = contributionURL(site.repository, getDraft());
-  if (url.length > 7600) { $('#form-status').textContent = '内容过长，请缩短说明，或先复制内容。'; return; }
-  $('#upload-fallback').href = url;
-  $('#upload-fallback').hidden = false;
-  window.open(url, '_blank', 'noopener,noreferrer');
-  $('#form-status').textContent = '在 GitHub 上传页选择或拖入文件，确认后提交。';
+  const form = event.target, status = form.querySelector('#form-status'), progress = form.querySelector('progress'), button = form.querySelector('[type="submit"]');
+  const error = validateFiles([...form.querySelector('[type="file"]').files]);
+  if (error) { status.textContent = error; return; }
+  if (!site.uploadService) { status.textContent = '上传服务暂未开放'; return; }
+  button.disabled = true; progress.hidden = false; status.textContent = '正在上传…';
+  try {
+    const result = await submitUpload(site.uploadService,new FormData(form),{ticket:uploadTicket,onTicket:value=>{uploadTicket=value;},onProgress:value=>{progress.value=value;status.textContent=value===100?'文件已发送，正在保存…':`正在上传 ${value}%`;}});
+    status.textContent = `上传成功，等待审核。投稿编号：${result.id}`;
+    form.reset(); uploadTicket = null; form.querySelector('#file-summary').textContent = '';
+  } catch(error) { if([400,403,409].includes(error.status)) uploadTicket=null; status.textContent=error.message; }
+  finally { button.disabled=false; progress.hidden=true; }
 });
 
 $('#menu-toggle').addEventListener('click', () => { const open = !$('#sidebar').classList.contains('open'); $('#sidebar').classList.toggle('open', open); $('#sidebar').inert = !open && matchMedia('(max-width:720px)').matches; $('#scrim').hidden = !open; $('#menu-toggle').setAttribute('aria-expanded', open); $('#menu-toggle').setAttribute('aria-label', open ? '关闭导航' : '打开导航'); });

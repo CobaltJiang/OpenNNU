@@ -44,17 +44,17 @@ OpenNNU 由学生发起，收集、整理可以公开分享的课程资料，让
 
 已导入提供的本学期开课清单：**2,011 门课程、5,065 个教学班、38 个开课单位**。按课程号合并教学班，同名但课程号不同的课程分别保留。正式收录资料为 **0 份**，与开课目录独立统计。
 
-Web 界面支持按课程名、课程号和教师检索，按开课单位、校区和课程类型筛选，分页浏览、教学班详情、浏览器收藏及 GitHub 投稿草稿。资料经审核合并后收录。
+Web 界面支持按课程名、课程号和教师检索，按开课单位、校区和课程类型筛选，分页浏览、教学班详情、浏览器收藏及免登录文件投稿。资料经审核后收录。
 
 ## 开始贡献
 
-无需会写代码：在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 填写信息，点击“下一步：上传文件”，在 GitHub 选择或拖入附件后提交，不用先上传网盘或填写链接。也可以直接打开 [文件上传页](https://github.com/CobaltJiang/OpenNNU/issues/new?template=resource.yml)。需要登录 GitHub。
+在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 选择文件并填写资料信息，直接上传，不需要 GitHub 或 ChatGPT 账号，也不用填写网盘链接。文件先私下待审，审核通过后由维护者的 GitHub 账号收录。每次 1–5 个文件，单个不超过 8 MB、合计不超过 20 MB。
 
 熟悉 Git 的同学可阅读 [贡献指南](CONTRIBUTING.md) 后提交 Pull Request。欢迎原创笔记、复习提纲、习题解析和取得分享许可的往年试卷。
 
 ## 本地运行
 
-需要 Node.js 22 或更高版本，**无需安装第三方依赖**。
+前端需要 Node.js 22 或更高版本，**无需安装第三方依赖**。上传后台的依赖与部署独立，见 [上传服务说明](upload-service/UPLOADS.md)。
 
 ```sh
 npm run dev
@@ -87,12 +87,13 @@ courses/
 docs/catalog.md          元数据规范与添加示例
 scripts/                 目录校验、构建与本地预览
 tests/                   检索、安全地址、数据规则测试
+upload-service/          免登录上传后台、私有待审存储
 .github/                 投稿模板与自动检查、部署流程
 ```
 
 ## 网站更新
 
-`main` 分支的提交通过 GitHub Actions 校验、测试、构建后，部署到 GitHub Pages。Pull Request 只进行检查，不部署。数据保存在可审查的 JSON 与文件目录中，前端无账号系统，也不需要私密密钥。
+`main` 分支的提交通过 GitHub Actions 校验、测试、构建后，部署到 GitHub Pages。Pull Request 只进行检查，不部署。已收录资料保存在可审查的 JSON 与文件目录中。独立的上传服务使用 D1 与私有 R2 暂存投稿；前端不含密钥，GitHub 凭据不离开维护者本机。维护流程见 [上传服务说明](upload-service/UPLOADS.md)。
 
 首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 `GitHub Actions`。完整流程见 [.github/workflows/pages.yml](.github/workflows/pages.yml)。
 
