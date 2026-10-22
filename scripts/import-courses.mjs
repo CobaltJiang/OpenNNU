@@ -105,7 +105,7 @@ export async function importCatalog(input, root) {
     departmentCount: unique(rows.map(row => row.开课单位)).length,
     imported: new Date().toISOString().slice(0, 10),
   };
-  await writeFile(resolve(root, 'data/courses.json'), JSON.stringify(courses) + '\n');
+  await writeFile(resolve(root, 'data/courses.json'), '[\n' + courses.map(course => '  ' + JSON.stringify(course)).join(',\n') + '\n]\n');
   await writeFile(resolve(root, 'data/catalog.json'), JSON.stringify(metadata, null, 2) + '\n');
   return metadata;
 }
