@@ -1,0 +1,55 @@
+name: 贡献资料
+description: 留下一份课程笔记、旧卷、解析，或公开资料线索
+title: "[资料投稿] "
+body:
+  - type: markdown
+    attributes:
+      value: 感谢你的贡献！此 Issue 为公开内容，请不要上传个人信息或许可尚未确认的资料。维护者审核后才会收录。
+  - type: input
+    id: course
+    attributes:
+      label: 课程名称与适用对象
+      placeholder: 课程名称、专业、学期（已知多少填写多少）
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: 资料标题与年份
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: 资料类型
+      options:
+        - 历年试卷
+        - 课程笔记
+        - 复习提纲
+        - 习题解析
+        - 其他资料
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: 作者、原始来源与分享许可
+      description: 请说明允许公开分享的依据；回忆版、AI 辅助内容与答案核对情况也请写明。
+    validations:
+      required: true
+  - type: textarea
+    id: file
+    attributes:
+      label: 文件、公开链接与补充说明
+      description: 可拖入已获分享许可的文件，或粘贴 HTTPS 公开链接。
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 投稿确认
+      options:
+        - label: 我确认来源信息准确，资料可按上述许可公开分享。
+          required: true
+        - label: 我已检查文件，不包含个人信息或未结束考试的内容。
+          required: true

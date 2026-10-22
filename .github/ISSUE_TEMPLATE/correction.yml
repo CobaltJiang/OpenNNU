@@ -1,0 +1,31 @@
+name: 反馈、纠错或撤下资料
+description: 报告内容错误、来源问题、链接失效，或申请撤下资料
+title: "[反馈] "
+body:
+  - type: input
+    id: location
+    attributes:
+      label: 相关页面或资料地址
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 问题类型
+      options:
+        - 内容或答案错误
+        - 课程信息错误
+        - 文件或链接无法打开
+        - 来源或分享许可问题
+        - 申请撤下资料
+        - 界面或功能问题
+        - 其他建议
+    validations:
+      required: true
+  - type: textarea
+    id: detail
+    attributes:
+      label: 具体情况与建议
+      description: 请提供可核对的信息。不要在公开 Issue 中重复贴出个人信息或私密凭据。
+    validations:
+      required: true

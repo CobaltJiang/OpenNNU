@@ -1,0 +1,30 @@
+[
+  {
+    "id": "mechanics",
+    "name": "力学",
+    "englishName": "Mechanics",
+    "code": "PHY / 01",
+    "area": "物理",
+    "audience": "物理相关专业",
+    "semester": "大一上",
+    "description": "从运动的描述到力与能量，留下理解物理的第一份积累。",
+    "aliases": ["普通物理", "牛顿力学", "mechanics"],
+    "topics": ["运动学", "牛顿运动定律", "动量与能量", "刚体运动"],
+    "note": "首批筹建课程。具体教材、授课教师和考试范围等待贡献者补充；这里的主题仅用于导航，不代表已核实的课程大纲。",
+    "directory": "courses/mechanics"
+  },
+  {
+    "id": "advanced-mathematics-1",
+    "name": "高等数学 I（上）",
+    "englishName": "Advanced Mathematics I",
+    "code": "MATH / 01",
+    "area": "数学",
+    "audience": "修读本课程的同学",
+    "semester": "大一上",
+    "description": "从一个极限开始，把零散的推导与思考连成清晰的路径。",
+    "aliases": ["高数", "高数上", "高等数学", "微积分", "calculus"],
+    "topics": ["函数与极限", "导数与微分", "微分中值定理", "积分"],
+    "note": "首批筹建课程。同名课程在不同专业可能采用不同教材和范围，使用资料前请核对适用对象。",
+    "directory": "courses/advanced-mathematics-1"
+  }
+]
