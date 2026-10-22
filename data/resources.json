@@ -13,5 +13,20 @@
     "origin": "其他",
     "type": "课程笔记",
     "id": "upload-765729e2-9acf-450b-8cc4-2cfd59f64c27-0"
+  },
+  {
+    "source": "学生整理，来源不详，未获明确授权",
+    "permission": "confirmed",
+    "year": "2025",
+    "courseId": "nnu-1017000026",
+    "answerStatus": "不适用",
+    "added": "2026-10-23",
+    "url": "courses/nnu-1017000026/submissions/1c8a0a35-123f-4826-948a-b9e18be9ebba/0.pdf",
+    "license": "未获明确授权（仅收录，供个人学习）",
+    "submissionId": "1c8a0a35-123f-4826-948a-b9e18be9ebba",
+    "title": "财税法学 笔记整理",
+    "origin": "其他",
+    "type": "课程笔记",
+    "id": "upload-1c8a0a35-123f-4826-948a-b9e18be9ebba-0"
   }
 ]
