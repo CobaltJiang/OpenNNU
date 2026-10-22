@@ -1,5 +1,6 @@
 import { RESOURCE_TYPES, escapeHTML as e, filterCourses, filterResources, safeURL, paginate, contributionURL } from './library.js';
 import { FILE_ACCEPT, UPLOAD_LIMIT_HINT, validateFiles, submitUpload } from './uploads.js';
+import {downloadSources} from './downloads.js';
 
 const paths = {
   home: '<rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/>',
@@ -60,8 +61,8 @@ function courseCard(course) {
 
 function resourceCard(resource) {
   const course = courseById.get(resource.courseId);
-  const url = safeURL(resource.url), sourceURL = safeURL(resource.sourceUrl, { local: false });
-  return `<article class="resource-card"><div class="resource-type-icon">${icon('files')}</div><div class="resource-body"><h3>${e(resource.title)}</h3><div class="resource-meta">${e(course?.name)} · ${e(course?.code)} · ${e(resource.year)} · ${e(resource.type)}</div><div class="pills"><span class="pill">${e(resource.origin)}</span><span class="pill">${e(resource.answerStatus)}</span><span class="pill">${e(resource.license)}</span></div><p class="resource-provenance">来源：${sourceURL ? `<a href="${e(sourceURL)}" target="_blank" rel="noopener noreferrer">${e(resource.source)} ↗</a>` : e(resource.source)}</p></div><div class="resource-actions">${bookmarkButton(`resource:${resource.id}`, resource.title)}${url ? `<a class="button" href="${e(url)}" target="_blank" rel="noopener noreferrer">查看 ${icon('external')}</a>` : ''}</div></article>`;
+  const sources=downloadSources(resource,site),url=sources[0]?.url,sourceURL = safeURL(resource.sourceUrl, { local: false });
+  return `<article class="resource-card"><div class="resource-type-icon">${icon('files')}</div><div class="resource-body"><h3>${e(resource.title)}</h3><div class="resource-meta">${e(course?.name)} · ${e(course?.code)} · ${e(resource.year)} · ${e(resource.type)}</div><div class="pills"><span class="pill">${e(resource.origin)}</span><span class="pill">${e(resource.answerStatus)}</span><span class="pill">${e(resource.license)}</span></div><p class="resource-provenance">来源：${sourceURL ? `<a href="${e(sourceURL)}" target="_blank" rel="noopener noreferrer">${e(resource.source)} ↗</a>` : e(resource.source)}</p></div><div class="resource-actions">${bookmarkButton(`resource:${resource.id}`, resource.title)}${url ? `<a class="button" href="${e(url)}" target="_blank" rel="noopener noreferrer">查看 ${icon('external')}</a>` : ''}${sources.length>1?`<details class="download-sources"><summary>备用下载</summary>${sources.slice(1).map(source=>`<a href="${e(source.url)}" target="_blank" rel="noopener noreferrer">${e(source.label)} ↗</a>`).join('')}</details>`:''}</div></article>`;
 }
 
 function searchBox(placeholder, value = '') {

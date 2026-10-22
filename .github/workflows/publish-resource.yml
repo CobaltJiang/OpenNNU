@@ -1,0 +1,34 @@
+name: Publish reviewed resource
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Approved cloud review job
+        required: true
+      service_url:
+        description: Fixed OpenNNU receiver origin
+        required: true
+permissions:
+  contents: write
+  actions: write
+  id-token: write
+concurrency:
+  group: opennnu-resource-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Import approved files and acknowledge verified commit
+        env:
+          REVIEW_JOB_ID: ${{ inputs.job_id }}
+          REVIEW_SERVICE_URL: ${{ inputs.service_url }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-cloud-resource.mjs

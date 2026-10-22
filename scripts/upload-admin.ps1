@@ -42,6 +42,7 @@ for($index=0;$index -lt $item.files.Count;$index++) {
 }
 if($Mode -eq 'Download') { $item.metadata | Format-List; $item.files | Select-Object name,size | Format-Table; Write-Output "待审文件：$reviewDirectory（请勿运行或直接信任文件内容）"; return }
 if(!$CourseId -or !$License){throw '审核后请指定 -CourseId 和 -License 才能公开发布'}
+if($License -match '未获|待确认|不详|不明|未授权'){throw '公开分享许可尚未核实，不能发布'}
 $courses=Get-Content data/courses.json -Raw | ConvertFrom-Json
 if(!($courses | Where-Object id -eq $CourseId)){throw '课程编号不存在'}
 $env:GIT_TERMINAL_PROMPT='0'; $env:GCM_INTERACTIVE='Never'

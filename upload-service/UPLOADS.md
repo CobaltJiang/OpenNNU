@@ -6,6 +6,8 @@
 
 ## 本机审核（PowerShell 7）
 
+新增云端审核页 `/review`，使用登录、角色授权和操作日志；部署与 GitHub App 配置见 [云端审核说明](../docs/cloud-review.md)。以下本机工具保留为维护者备用，不应直接暴露到公网。
+
 推荐用本地审核台，省去逐个敲命令：
 
 ```powershell

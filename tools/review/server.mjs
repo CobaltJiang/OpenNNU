@@ -80,6 +80,8 @@ function sameOrigin(req) {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
   try {
+    if(![`127.0.0.1:${PORT}`,`localhost:${PORT}`].includes(req.headers.host))return fail(res,403,'不允许的 Host');
+    if(url.pathname.startsWith('/api/')&&!sameOrigin(req))return fail(res,403,'不允许的来源');
     if (url.pathname === '/api/config') {
       const courses = JSON.parse(await readFile(path.join(repo, 'data', 'courses.json'), 'utf8'));
       return json(res, 200, { service, courses: courses.map(({ id, name, code }) => ({ id, name, code })) });
@@ -120,6 +122,7 @@ const server = createServer(async (req, res) => {
         if (!/^[a-f0-9-]{36}$/.test(id || '')) return fail(res, 400, '投稿编号无效');
         if (!/^[a-z0-9-]{3,}$/.test(courseId || '')) return fail(res, 400, '课程编号无效');
         for (const value of [title, source, license, origin, answerStatus]) if (!String(value || '').trim()) return fail(res, 400, '发布字段不完整');
+        if(/未获|待确认|不详|不明|未授权/.test(String(license)))return fail(res,400,'公开分享许可尚未核实，不能发布');
         // Publish 读取 .local/review/<id>/，先落地待审文件；重复执行是幂等的。
         await run(PWSH, ['-NoProfile', '-File', adminScript, '-Mode', 'Download', '-Id', id]);
         const output = await run(PWSH, ['-NoProfile', '-File', adminScript, '-Mode', 'Publish', '-Id', id, '-CourseId', courseId, '-Title', title, '-Source', source, '-License', license, '-Origin', origin, '-AnswerStatus', answerStatus]);

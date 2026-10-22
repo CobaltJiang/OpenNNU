@@ -4,5 +4,7 @@
   "repository": "https://github.com/CobaltJiang/OpenNNU",
   "maintainer": "CobaltJiang",
   "updated": "2026-10-23",
-  "uploadService": "https://opennnu-upload.undefinedcobalt.chatgpt.site"
+  "uploadService": "https://opennnu-upload.undefinedcobalt.chatgpt.site",
+  "reviewURL": "https://review.cybercobalt.xyz/review",
+  "downloads": { "preferred": "origin", "mirrors": [] }
 }

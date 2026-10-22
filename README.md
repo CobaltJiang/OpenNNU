@@ -93,6 +93,8 @@ upload-service/          免登录上传后台、私有待审存储
 
 ## 网站更新
 
+云端审核、多人维护权限和未来下载镜像接口见 [云端审核说明](docs/cloud-review.md)。审核页面需要登录和维护者授权；GitHub App 未配置时，公开发布保持关闭。
+
 `main` 分支的提交通过 GitHub Actions 校验、测试、构建后，部署到 GitHub Pages。Pull Request 只进行检查，不部署。已收录资料保存在可审查的 JSON 与文件目录中。独立的上传服务使用 D1 与私有 R2 暂存投稿；前端不含密钥，GitHub 凭据不离开维护者本机。维护流程见 [上传服务说明](upload-service/UPLOADS.md)。
 
 首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 `GitHub Actions`。完整流程见 [.github/workflows/pages.yml](.github/workflows/pages.yml)。

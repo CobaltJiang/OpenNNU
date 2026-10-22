@@ -1,5 +1,5 @@
-const DEFAULT_SOURCE = '学生整理，来源不详，未获明确授权';
-const DEFAULT_LICENSE = '未获明确授权（仅收录，供个人学习）';
+const DEFAULT_SOURCE = '';
+const DEFAULT_LICENSE = '';
 const ORIGINS = ['原卷', '回忆版', '学生原创', '教师授权', '其他'];
 const ANSWERS = ['无答案', '答案未核对', '答案已校对', '不适用'];
 
@@ -14,7 +14,7 @@ function resolveCourse(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
   const code = raw.match(/(\d{10})/);
-  if (code && byId.has(`nnu-${code[1]}`)) return byId.get(`nnu-${code[1]}`);
+  if (code && byCode.has(code[1])) return byCode.get(code[1]);
   if (byName.has(raw)) return byName.get(raw);
   const bare = raw.replace(/[（(].*?[)）]/g, '').trim();
   return byName.get(bare) || null;
