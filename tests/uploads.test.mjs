@@ -3,20 +3,20 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile } from 'node:fs/promises';
 import { handleUpload, validateDraft } from '../upload-service/lib/uploads.mjs';
-import { validateFiles } from '../assets/uploads.js';
+import { validateFiles, submitUpload } from '../assets/uploads.js';
 
 function fixture() {
   const db=new DatabaseSync(':memory:');
   db.exec('CREATE TABLE tickets(id TEXT PRIMARY KEY,ip TEXT,created INTEGER,used INTEGER DEFAULT 0); CREATE TABLE submissions(id TEXT PRIMARY KEY,created INTEGER,state TEXT,metadata TEXT,files TEXT,receipt TEXT);');
   const objects=new Map();
-  const env={UPLOAD_ADMIN_KEY:'test-only-secret',DB:{prepare(sql){return{bind(...values){return{async run(){return{meta:{changes:db.prepare(sql).run(...values).changes}};},async first(){return db.prepare(sql).get(...values);},async all(){return{results:db.prepare(sql).all(...values)};}};},async all(){return{results:db.prepare(sql).all()};}};}},BUCKET:{async put(key,stream){objects.set(key,await new Response(stream).arrayBuffer());},async get(key){return objects.has(key)?{body:objects.get(key)}:null;},async delete(key){objects.delete(key);}}};
+  const env={UPLOAD_ADMIN_KEY:'test-only-secret',DB:{prepare(sql){return{bind(...values){return{async run(){return{meta:{changes:db.prepare(sql).run(...values).changes}};},async first(){return db.prepare(sql).get(...values);},async all(){return{results:db.prepare(sql).all(...values)};}};},async all(){return{results:db.prepare(sql).all()};}};}},BUCKET:{async put(key,stream){objects.set(key,await new Response(stream).arrayBuffer());},async get(key){return objects.has(key)?{body:objects.get(key)}:null;},async head(key){return objects.has(key)?{size:objects.get(key).byteLength}:null;},async delete(key){objects.delete(key);}}};
   return{env,db,objects};
 }
 const origin='https://cobaltjiang.github.io', base='https://upload.example';
 function draft() {const form=new FormData();for(const [key,value] of Object.entries({course:'力学（1007003065）',title:'测试资料',type:'课程笔记',year:'2026',source:'测试自编，允许分享',note:'',permission:'yes'}))form.set(key,value);form.append('files',new File(['hello'],'笔记.txt'));return form;}
 test('前后端均限制文件数量、格式、大小和明确分享许可',()=>{
   assert.equal(validateFiles([{name:'笔记.pdf',size:100}]),'');
-  for(const files of [[],[{name:'x.exe',size:5}],[{name:'x.pdf',size:9*1024*1024}],[{name:'x.pdf',size:0}],Array(6).fill({name:'x.pdf',size:1})])assert.ok(validateFiles(files));
+  for(const files of [[],[{name:'x.exe',size:5}],[{name:'x.pdf',size:51*1024*1024}],[{name:'x.pdf',size:0}],Array(6).fill({name:'x.pdf',size:1})])assert.ok(validateFiles(files));
   const form=draft(); assert.equal(validateDraft(form).draft.course,'力学（1007003065）');form.delete('permission');assert.throws(()=>validateDraft(form),/许可/);
   const traversal=draft();traversal.set('files',new File(['x'],'../bad.txt'));assert.throws(()=>validateDraft(traversal),/文件名/);
 });
@@ -50,5 +50,60 @@ test('错误来源、失效会话、滥用配额和无许可上传均拒绝',asy
 });
 test('网页主投稿入口是真文件表单，不再跳转 GitHub 或包含令牌',async()=>{
   const app=await readFile(new URL('../assets/app.js',import.meta.url),'utf8');
-  assert.match(app,/type="file" name="files" multiple required/);assert.match(app,/submitUpload\(site.uploadService/);assert.ok(!app.includes('window.open(url'));assert.ok(!app.includes('需登录 GitHub'));
+  assert.match(app,/type="file" name="files" multiple required/);assert.match(app,/submitUpload\(site.uploadService/);assert.match(app,/单个 ≤ 50 MB · 合计 ≤ 100 MB/);assert.ok(!app.includes('window.open(url'));assert.ok(!app.includes('需登录 GitHub'));
+});
+test('前后端一致接受 20 MB 和 50 MB，拒绝超单文件及 100 MB 总量边界',()=>{
+  const mb=1024*1024;
+  const check=files=>{const form=draft();return validateDraft({get:key=>form.get(key),getAll:()=>files});};
+  for(const size of [20*mb,50*mb]){const files=[{name:'资料.pdf',size}];assert.equal(validateFiles(files),'');assert.equal(check(files).files[0].size,size);}
+  const full=[{name:'a.pdf',size:50*mb},{name:'b.pdf',size:50*mb}];assert.equal(validateFiles(full),'');assert.equal(check(full).files.length,2);
+  for(const files of [[{name:'x.pdf',size:50*mb+1}],[...full,{name:'x.txt',size:1}]]){assert.ok(validateFiles(files));assert.throws(()=>check(files),/50 MB|100 MB/);}
+});
+test('50 MB 文件流式接收，完整校验后才进入待审，支持安全重试',async()=>{
+  const {env,db,objects}=fixture();try{
+    const {ticket}=await (await handleUpload(new Request(`${base}/api/ticket`,{method:'POST',headers:{Origin:origin}}),env)).json();
+    const headers={Origin:origin,'X-Upload-Ticket':ticket};
+    const manifest=Object.fromEntries([...draft().entries()].filter(([key])=>key!=='files'));
+    const size=50*1024*1024;manifest.files=[{name:'large.pdf',size}];
+    const start=()=>handleUpload(new Request(`${base}/api/uploads/start`,{method:'POST',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(manifest)}),env);
+    assert.equal((await start()).status,201);assert.equal((await start()).status,200);
+    const complete=()=>handleUpload(new Request(`${base}/api/uploads/${ticket}/complete`,{method:'POST',headers}),env);
+    assert.equal((await complete()).status,409);assert.equal(db.prepare('SELECT state FROM submissions WHERE id=?').get(ticket).state,'uploading');
+    const chunk=new Uint8Array(256*1024);let sent=0;
+    const stream=new ReadableStream({pull(controller){if(sent===size){controller.close();return;}controller.enqueue(chunk);sent+=chunk.length;}});
+    const uploaded=await handleUpload(new Request(`${base}/api/uploads/${ticket}/0`,{method:'PUT',headers,body:stream,duplex:'half'}),env);
+    assert.equal(uploaded.status,200);assert.equal(objects.get(`pending/${ticket}/0`).byteLength,size);
+    assert.equal((await complete()).status,201);assert.equal((await complete()).status,200);
+    assert.equal(db.prepare('SELECT state FROM submissions WHERE id=?').get(ticket).state,'pending');
+    const overwrite=await handleUpload(new Request(`${base}/api/uploads/${ticket}/0`,{method:'PUT',headers,body:'x'}),env);assert.equal(overwrite.status,409);
+  }finally{db.close();}
+});
+test('流式接口拒绝伪造长度的超额与不完整文件',async()=>{
+  for(const bytes of ['abc','abcde']){
+    const {env,db,objects}=fixture();try{
+      const {ticket}=await (await handleUpload(new Request(`${base}/api/ticket`,{method:'POST',headers:{Origin:origin}}),env)).json();
+      const headers={Origin:origin,'X-Upload-Ticket':ticket};const manifest=Object.fromEntries([...draft().entries()].filter(([key])=>key!=='files'));manifest.files=[{name:'file.txt',size:4}];
+      await handleUpload(new Request(`${base}/api/uploads/start`,{method:'POST',headers,body:JSON.stringify(manifest)}),env);
+      const r=await handleUpload(new Request(`${base}/api/uploads/${ticket}/0`,{method:'PUT',headers,body:bytes}),env);
+      assert.equal(r.status,400);assert.equal(objects.size,0);assert.equal(db.prepare('SELECT state FROM submissions WHERE id=?').get(ticket).state,'uploading');
+    }finally{db.close();}
+  }
+});
+test('浏览器传输协议逐个发送原文件，并在全部完成后提交审核',async()=>{
+  const originalFetch=globalThis.fetch,originalXHR=globalThis.XMLHttpRequest;
+  const calls=[],sent=[],progress=[];const id='00000000-0000-4000-8000-000000000001';
+  globalThis.fetch=async(url,options)=>{calls.push({url:String(url),options});return Response.json(String(url).endsWith('/ticket')?{ticket:id}:String(url).endsWith('/start')?{id,state:'uploading'}:{id,state:'pending'});};
+  globalThis.XMLHttpRequest=class {
+    upload={};headers={};
+    open(method,url){this.method=method;this.url=String(url);}
+    setRequestHeader(key,value){this.headers[key]=value;}
+    send(file){sent.push({method:this.method,url:this.url,file,headers:this.headers});this.upload.onprogress({lengthComputable:true,loaded:file.size,total:file.size});this.status=200;this.responseText='{"ok":true}';queueMicrotask(()=>this.onload());}
+  };
+  try{
+    const form=draft();form.append('files',new File(['world'],'第二份.txt'));
+    const result=await submitUpload(base,form,{onProgress:value=>progress.push(value)});
+    assert.equal(result.state,'pending');assert.equal(sent.length,2);assert.ok(sent.every(item=>item.method==='PUT'&&item.file instanceof File&&item.headers['X-Upload-Ticket']===id));
+    const manifest=JSON.parse(calls[1].options.body);assert.deepEqual(manifest.files,[{name:'笔记.txt',size:5},{name:'第二份.txt',size:5}]);
+    assert.ok(calls[2].url.endsWith('/complete'));assert.deepEqual(progress,[50,100]);
+  }finally{globalThis.fetch=originalFetch;if(originalXHR===undefined)delete globalThis.XMLHttpRequest;else globalThis.XMLHttpRequest=originalXHR;}
 });
