@@ -8,6 +8,7 @@
   <title>OpenNNU · 南师大开放课程资料计划</title>
   <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/style.css">
+  <link rel="stylesheet" href="./assets/catalog.css">
   <script type="module" src="./assets/app.js"></script>
 </head>
 <body>
@@ -15,7 +16,7 @@
   <button class="sidebar-scrim" id="scrim" aria-label="关闭导航" hidden></button>
   <aside class="sidebar" id="sidebar" aria-label="主导航">
     <a class="brand" href="#/" aria-label="OpenNNU 首页"><img src="./assets/favicon.svg" alt="" width="38" height="38"><span>OpenNNU<small>南师大开放课程资料计划</small></span></a>
-    <div class="workspace-label"><span class="status-dot"></span> 一份持续生长的公共积累 <span class="version">α</span></div>
+    <div class="workspace-label"><span class="status-dot"></span> 开放课程资料库</div>
     <div class="nav-group-label">探索资料</div>
     <nav id="navigation">
       <a class="nav-item" href="#/" data-nav="home"><span data-icon="home"></span>发现课程<span class="nav-count" id="nav-course-count">—</span></a>
@@ -24,10 +25,9 @@
     </nav>
     <div class="nav-divider"></div>
     <div class="nav-group-label">一起建设</div>
-    <a class="nav-item" href="#/contribute" data-nav="contribute"><span data-icon="plus"></span>贡献一份资料</a>
-    <a class="nav-item" href="#/about" data-nav="about"><span data-icon="book"></span>关于这个计划</a>
+    <a class="nav-item" href="#/contribute" data-nav="contribute"><span data-icon="plus"></span>贡献资料</a>
+    <a class="nav-item" href="#/about" data-nav="about"><span data-icon="book"></span>关于</a>
     <div class="sidebar-bottom">
-      <div class="sidebar-note"><span data-icon="sprout"></span><strong>知识值得被传下去。</strong><p>你的一个文件，或许就是<br>下一位同学的起点。</p><a href="#/contribute">成为第一位贡献者 <span aria-hidden="true">↗</span></a></div>
       <a class="sidebar-github repo-link" href="https://github.com/CobaltJiang/OpenNNU" target="_blank" rel="noopener noreferrer"><span data-icon="github"></span>在 GitHub 上查看<span aria-hidden="true">↗</span></a>
       <p class="student-project">学生自发 · 非学校官方网站</p>
     </div>
@@ -35,10 +35,10 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="topbar-left"><button class="icon-button menu-button" id="menu-toggle" aria-label="打开导航" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button><span class="breadcrumb">资料库 <span>/</span> <span id="breadcrumb-current">发现课程</span></span></div>
-      <div class="topbar-actions"><span class="topbar-note"><span class="status-dot"></span>免费开放，持续共建</span><a class="button button-small button-primary" href="#/contribute"><span data-icon="plus"></span>贡献资料</a></div>
+      <div class="topbar-actions"><a class="button button-small button-primary" href="#/contribute"><span data-icon="plus"></span>贡献资料</a></div>
     </header>
     <main id="main" tabindex="-1"><div class="loading-state" role="status">正在打开资料库…</div></main>
-    <footer class="footer"><span>OpenNNU <span class="footer-separator">/</span> 让学习的积累，跨越年级。</span><span><a href="#/about">项目说明</a><a class="repo-link" href="https://github.com/CobaltJiang/OpenNNU" target="_blank" rel="noopener noreferrer">GitHub ↗</a></span></footer>
+    <footer class="footer"><span>OpenNNU</span><span><a href="#/about">关于</a><a class="repo-link" href="https://github.com/CobaltJiang/OpenNNU" target="_blank" rel="noopener noreferrer">GitHub ↗</a></span></footer>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <noscript><p class="noscript">此界面需要 JavaScript。你也可以直接访问 <a href="https://github.com/CobaltJiang/OpenNNU/tree/main/courses">GitHub 课程目录</a>。</p></noscript>

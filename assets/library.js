@@ -5,15 +5,24 @@ export function normalize(value) {
 }
 
 export function matchesQuery(record, query) {
-  const haystack = normalize([record.name, record.title, record.englishName, record.description, record.area, record.audience, record.year, record.type, ...(record.aliases ?? []), ...(record.topics ?? [])].join(' '));
+  const haystack = normalize([record.name, record.title, record.code, record.englishName, record.description, record.area, record.audience, record.year, record.type, ...(record.departments ?? []), ...(record.teachers ?? []), ...(record.types ?? []), ...(record.campuses ?? []), ...(record.aliases ?? []), ...(record.topics ?? [])].join(' '));
   return normalize(query).split(' ').filter(Boolean).every(part => haystack.includes(part));
 }
 
-export function filterCourses(courses, { query = '', area = 'all', sort = 'default', resources = [] } = {}) {
-  const result = courses.filter(course => (area === 'all' || course.area === area) && matchesQuery(course, query));
+export function filterCourses(courses, { query = '', area = 'all', department = 'all', campus = 'all', type = 'all', withResources = false, sort = 'default', resources = [] } = {}) {
+  const counts = new Map();
+  for (const resource of resources) counts.set(resource.courseId, (counts.get(resource.courseId) || 0) + 1);
+  const result = courses.filter(course => (area === 'all' || course.area === area) && (department === 'all' || course.departments?.includes(department)) && (campus === 'all' || course.campuses?.includes(campus)) && (type === 'all' || course.types?.includes(type)) && (!withResources || counts.has(course.id)) && matchesQuery(course, query));
   if (sort === 'name') result.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
-  if (sort === 'resources') result.sort((a, b) => resources.filter(r => r.courseId === b.id).length - resources.filter(r => r.courseId === a.id).length);
+  if (sort === 'resources') result.sort((a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
+  if (sort === 'code') result.sort((a, b) => a.code.localeCompare(b.code));
   return result;
+}
+
+export function paginate(items, page = 1, pageSize = 24) {
+  const pages = Math.max(1, Math.ceil(items.length / pageSize));
+  const current = Math.min(pages, Math.max(1, Number(page) || 1));
+  return { items: items.slice((current - 1) * pageSize, current * pageSize), page: current, pages, total: items.length };
 }
 
 export function filterResources(resources, courses, { query = '', courseId = 'all', type = 'all', year = 'all', sort = 'newest' } = {}) {

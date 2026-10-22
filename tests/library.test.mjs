@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { filterCourses, filterResources, safeURL, escapeHTML, contributionURL } from '../assets/library.js';
+import { filterCourses, filterResources, safeURL, escapeHTML, contributionURL, paginate } from '../assets/library.js';
 import { validateCatalog } from '../scripts/validate.mjs';
 import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -50,7 +50,8 @@ test('目录校验拒绝许可待确认和缺失本地文件', async () => {
   const base = await mkdtemp(join(tmpdir(), 'opennnu-catalog-'));
   try {
     await mkdir(join(base, 'data'));
-    const actual = await validateCatalog();
+    const original = await validateCatalog();
+    const actual = { ...original, courses: [{ ...original.courses[0], directory: `courses/${original.courses[0].id}` }] };
     for (const course of actual.courses) { await mkdir(join(base, course.directory), { recursive: true }); await writeFile(join(base, course.directory, 'README.md'), '# Course'); }
     await writeFile(join(base, 'data/site.json'), JSON.stringify(actual.site));
     await writeFile(join(base, 'data/courses.json'), JSON.stringify(actual.courses));
@@ -63,4 +64,22 @@ test('目录校验拒绝许可待确认和缺失本地文件', async () => {
     await writeFile(join(base, resource.url), 'test');
     assert.equal((await validateCatalog(base)).resources.length, 1);
   } finally { await rm(base, { recursive: true, force: true }); }
+});
+
+test('课程筛选组合开课单位、校区、类型，并按真实资料数量筛选', () => {
+  const items = [{ ...courses[0], code: '001', departments: ['物科院'], campuses: ['仙林'], types: ['学科基础课程'], teachers: ['张老师'] }, { ...courses[1], code: '002', departments: ['数学部'], campuses: ['随园'], types: ['学科基础课程'], teachers: ['李老师'] }];
+  assert.deepEqual(filterCourses(items, { query: '张老师', department: '物科院', campus: '仙林', type: '学科基础课程' }).map(c => c.id), ['mechanics']);
+  assert.deepEqual(filterCourses(items, { query: '002' }).map(c => c.id), ['math']);
+  assert.deepEqual(filterCourses(items, { department: '物科院', campus: '随园' }), []);
+  assert.deepEqual(filterCourses(items, { withResources: true, resources: [resources[0]] }).map(c => c.id), ['mechanics']);
+});
+
+test('大目录分页无遗漏，筛选后页码越界回到有效页', () => {
+  const items = Array.from({ length: 2011 }, (_, id) => id);
+  const combined = [];
+  for (let page = 1; page <= 84; page++) combined.push(...paginate(items, page).items);
+  assert.deepEqual(combined, items);
+  assert.equal(paginate(items, 84).items.length, 19);
+  assert.equal(paginate(items.slice(0, 3), 84).page, 1);
+  assert.deepEqual(paginate([], 84), { items: [], page: 1, pages: 1, total: 0 });
 });

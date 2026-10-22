@@ -1,0 +1,10 @@
+{
+  "term": "本学期",
+  "source": "全校课程_5065.csv",
+  "sourceFile": "catalog/current-semester.csv",
+  "sha256": "42456461cfa7119163fc1c8d82dbfaf2d4837e10335f7817ae96ef285e440dba",
+  "rowCount": 5065,
+  "courseCount": 2011,
+  "departmentCount": 38,
+  "imported": "2026-10-22"
+}

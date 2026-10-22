@@ -11,14 +11,24 @@ export async function validateCatalog(base = root) {
   if (!Array.isArray(courses) || !Array.isArray(resources)) throw new Error('courses 和 resources 必须是数组');
   if (!/^https:\/\/github\.com\/[\w-]+\/[\w.-]+$/.test(site.repository)) errors.push('site.repository 必须是 GitHub 仓库地址');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(site.updated)) errors.push('site.updated 必须为 YYYY-MM-DD');
-  const ids = new Set();
+  const ids = new Set(), courseCodes = new Set(), sectionIds = new Set();
   for (const course of courses) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(course.id) || ids.has(course.id)) errors.push(`课程 ID 无效或重复：${course.id}`);
     ids.add(course.id);
-    for (const key of ['name', 'englishName', 'area', 'audience', 'semester', 'description', 'code']) if (typeof course[key] !== 'string' || !course[key].trim()) errors.push(`${course.id} 缺少 ${key}`);
-    if (!Array.isArray(course.topics) || !Array.isArray(course.aliases)) errors.push(`${course.id} topics 和 aliases 必须是数组`);
-    if (course.directory !== `courses/${course.id}`) errors.push(`${course.id} 的资料目录不一致`);
-    try { await stat(resolve(base, `courses/${course.id}/README.md`)); } catch { errors.push(`${course.id} 缺少课程说明`); }
+    if (courseCodes.has(course.code)) errors.push(`课程号重复：${course.code}`);
+    courseCodes.add(course.code);
+    for (const key of ['name', 'code']) if (typeof course[key] !== 'string' || !course[key].trim()) errors.push(`${course.id} 缺少 ${key}`);
+    for (const key of ['departments', 'credits', 'hours', 'types', 'natures', 'generalCategories', 'modules', 'campuses', 'teachers', 'aliases']) if (!Array.isArray(course[key])) errors.push(`${course.id} 的 ${key} 必须是数组`);
+    if (!Array.isArray(course.sections) || course.sections.length !== course.sectionCount) errors.push(`${course.id} 教学班数量不一致`);
+    for (const section of course.sections || []) {
+      if (!section.id || sectionIds.has(section.id)) errors.push(`教学班 ID 缺失或重复：${section.id}`);
+      sectionIds.add(section.id);
+      for (const key of ['id', 'number', 'teacher', 'department', 'credits', 'hours', 'type', 'nature', 'generalCategory', 'module', 'schedule', 'campus', 'capacity', 'descriptionFlag']) if (typeof section[key] !== 'string') errors.push(`${course.id} 的教学班 ${key} 必须为字符串`);
+    }
+    if (course.directory) {
+      if (course.directory !== `courses/${course.id}`) errors.push(`${course.id} 的资料目录不一致`);
+      try { await stat(resolve(base, `courses/${course.id}/README.md`)); } catch { errors.push(`${course.id} 缺少课程说明`); }
+    }
   }
   const resourceIds = new Set();
   for (const resource of resources) {
