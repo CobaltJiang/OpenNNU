@@ -51,15 +51,19 @@ Sites 绑定 `review.cybercobalt.xyz` 后，会返回一条 CNAME 和两条所�
 
 上传接口不可达（`Failed to fetch`）与 GitHub 文件下载慢是不同链路，下载镜像不会修复前者。先稳定上传服务的域名和网络路径；保留超时、短暂重试、失败阶段提示和原表单。
 
-公开文件已有“本站文件”和“GitHub 原始文件”备用下载。`data/site.json` 预留：
+公开资料主按钮为「ghproxy 下载」，仅将固定仓库的公开 `courses/...` 文件映射到 ghproxy.net。本站文件和 GitHub 原始文件保留在「备用下载」；镜像卡住时由用户手动切换，不做静默跳转。`data/site.json` 当前配置：
 
 ```json
 "downloads": {
-  "preferred": "origin",
-  "mirrors": []
+  "preferred": "ghproxy",
+  "mirrors": [
+    { "id": "ghproxy", "kind": "github-proxy", "label": "ghproxy 镜像", "baseURL": "https://ghproxy.net/", "enabled": true }
+  ]
 }
 ```
 
-以后自有 CDN 完成同步和完整性核对后，可添加 `{ "id": "own-cdn", "label": "自有 CDN", "baseURL": "https://你的CDN/OpenNNU/", "enabled": true }` 并修改 preferred。CDN 静态目录必须与仓库 `courses/...` 路径一致；只提供已审核的公开文件。默认不接第三方公共代理，不把管理 API、令牌、未审核文件或授权依据交给镜像。
+这是维护者明确启用的公共代理，只有 `kind: github-proxy` 且地址严格为 `https://ghproxy.net/` 才启用；目标地址由固定仓库和公开资料路径构造，不接受任意嵌套地址或 API。上传、审核、Issue、Git 推送和云端发布仍走原服务，不修改 `site.repository`、Git remote 或全局 Git 配置，不把令牌、未审核文件或授权依据交给镜像。第三方镜像可能延迟、超时或替换内容，不是可信的授权依据；不要在镜像站登录或填写密钥。
+
+关闭镜像时将其 `enabled` 改为 `false`，主按钮自动回退本站；也可将 `preferred` 改为 `origin` 保留镜像备用。以后自有 CDN 完成同步和完整性核对后，可添加 `{ "id": "own-cdn", "kind": "static", "label": "自有 CDN", "baseURL": "https://你的CDN/OpenNNU/", "enabled": true }` 并修改 preferred。CDN 静态目录必须与仓库 `courses/...` 路径一致；只提供已审核的公开文件。
 
 不对未验证来源自动做浏览器 fetch 探测或失败自动跳转；保留人工切换来源，避免 CORS 误判、隐式第三方访问及镜像内容替换。后续可以在受控 CDN 中加入校验和、版本固定、缓存和下载统计。

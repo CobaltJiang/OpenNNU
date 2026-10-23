@@ -106,7 +106,7 @@ docs/cloud-review.md     多人维护、发布授权与下载镜像说明
 
 `main` 分支的提交通过校验、测试、构建后部署到 GitHub Pages，Pull Request 只检查不部署。云端审核、多人维护接口与发布配置见 [云端审核说明](docs/cloud-review.md)，上传后台部署见 [上传服务说明](upload-service/UPLOADS.md)。本机审核工具仅为可选兼容入口，不是日常审核必需项。
 
-下载提供本站文件和 GitHub 原始文件备用入口，已预留自有 CDN／镜像配置，尚未启用第三方公共代理。下载镜像不解决上传接口的 `Failed to fetch`；两条链路需分别排查。自定义审核域名仍待 DNS 与证书验证，完成前使用上面的云端原域名。
+公开资料优先使用 **ghproxy.net** 下载，卡住时可从「备用下载」切换本站文件或 GitHub 原始文件。镜像只接收公开文件地址，不参与上传、审核、Issue 或推送，也不接收任何管理凭据。下载镜像不解决上传接口的 `Failed to fetch`；两条链路需分别排查。自定义审核域名仍待 DNS 与证书验证，完成前使用上面的云端原域名。
 
 首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 `GitHub Actions`。完整流程见 [.github/workflows/pages.yml](.github/workflows/pages.yml)。
 
