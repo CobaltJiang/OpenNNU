@@ -13,7 +13,7 @@ body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.65 "Microso
 .card-head h2 { font-size:15px; margin:0 }
 .meta { color:var(--muted); font-size:12px }
 .pill { display:inline-block; padding:1px 8px; border:1px solid var(--line); border-radius:99px; font-size:11px; color:var(--muted) }
-.card-body { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:0 }
+.card-body { display:grid; grid-template-columns:1fr; gap:0 }
 @media (max-width:840px) { .card-body { grid-template-columns:1fr } }
 .preview { padding:14px 18px; border-right:1px solid var(--line); min-height:120px }
 .files { list-style:none; margin:0 0 12px; padding:0; font-size:13px }
@@ -41,3 +41,4 @@ body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.65 "Microso
 .status.ok { color:#2f6b3a }
 .status.err { color:#a12b2b }
 .toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:#26221c; color:#fff; padding:9px 16px; border-radius:6px; font-size:13px; z-index:20 }
+.edit-details summary{cursor:pointer;color:var(--accent);padding:4px 0 12px}.form input[type=checkbox]{width:auto;display:inline}.actions{justify-content:flex-end}.form .meta{margin-bottom:0}

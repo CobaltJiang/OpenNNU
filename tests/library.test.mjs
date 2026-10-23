@@ -58,7 +58,7 @@ test('正式目录使用真实数据，尚未收录时保持空数组', async ()
   assert.ok(Array.isArray(catalog.resources));
 });
 
-test('目录校验拒绝许可待确认和缺失本地文件', async () => {
+test('目录校验拒绝未审核资料，允许如实标记的授权未核实资料', async () => {
   const base = await mkdtemp(join(tmpdir(), 'opennnu-catalog-'));
   try {
     await mkdir(join(base, 'data'));
@@ -69,12 +69,18 @@ test('目录校验拒绝许可待确认和缺失本地文件', async () => {
     await writeFile(join(base, 'data/courses.json'), JSON.stringify(actual.courses));
     const resource = { id: 'test-note', courseId: actual.courses[0].id, title: '测试资料', type: '课程笔记', year: '年份待核', source: '测试', license: '测试许可', permission: 'pending', added: '2026-10-22', origin: '学生原创', answerStatus: '不适用', url: `courses/${actual.courses[0].id}/missing.pdf` };
     await writeFile(join(base, 'data/resources.json'), JSON.stringify([resource]));
-    await assert.rejects(validateCatalog(base), /分享许可尚未确认/);
+    await assert.rejects(validateCatalog(base), /缺少收录审核结论/);
     resource.permission = 'confirmed';
     await writeFile(join(base, 'data/resources.json'), JSON.stringify([resource]));
     await assert.rejects(validateCatalog(base), /本地文件不存在/);
     await writeFile(join(base, resource.url), 'test');
     assert.equal((await validateCatalog(base)).resources.length, 1);
+    resource.permission='unverified';resource.license='授权未核实';
+    await writeFile(join(base, 'data/resources.json'), JSON.stringify([resource]));
+    await assert.rejects(validateCatalog(base),/缺少收录审核结论/);
+    resource.reviewStatus='approved';
+    await writeFile(join(base, 'data/resources.json'), JSON.stringify([resource]));
+    assert.equal((await validateCatalog(base)).resources[0].permission,'unverified');
   } finally { await rm(base, { recursive: true, force: true }); }
 });
 

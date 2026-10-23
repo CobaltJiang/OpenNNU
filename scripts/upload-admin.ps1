@@ -3,6 +3,7 @@ param(
   [string]$Id,
   [string]$CourseId,
   [string]$License,
+  [ValidateSet('unverified','confirmed')][string]$PermissionState='unverified',
   [string]$Title,
   [string]$Source,
   [ValidateSet('原卷','回忆版','学生原创','教师授权','其他')][string]$Origin='其他',
@@ -41,8 +42,9 @@ for($index=0;$index -lt $item.files.Count;$index++) {
   Invoke-WebRequest -Uri "$service/api/admin/$Id/$index" -Headers $uploadHeaders -OutFile (Join-Path $reviewDirectory "$index$extension") -TimeoutSec 120
 }
 if($Mode -eq 'Download') { $item.metadata | Format-List; $item.files | Select-Object name,size | Format-Table; Write-Output "待审文件：$reviewDirectory（请勿运行或直接信任文件内容）"; return }
-if(!$CourseId -or !$License){throw '审核后请指定 -CourseId 和 -License 才能公开发布'}
-if($License -match '未获|待确认|不详|不明|未授权'){throw '公开分享许可尚未核实，不能发布'}
+if(!$CourseId){throw '请指定 -CourseId'}
+if($PermissionState -eq 'unverified'){$License='授权未核实'}
+elseif(!$License -or $License -match '未获|待确认|不详|不明|未授权|未核实'){throw '明确授权状态需要填写实际许可'}
 $courses=Get-Content data/courses.json -Raw | ConvertFrom-Json
 if(!($courses | Where-Object id -eq $CourseId)){throw '课程编号不存在'}
 $env:GIT_TERMINAL_PROMPT='0'; $env:GCM_INTERACTIVE='Never'
@@ -75,7 +77,7 @@ for($index=0;$index -lt $item.files.Count;$index++) {
   # 维护者可改写公开展示的标题与来源：投稿原文里可能含可识别到具体个人的信息。
   $displayTitle=if($Title){$Title}else{"$($item.metadata.title) · $($file.name)"}
   $displaySource=if($Source){$Source}else{$item.metadata.source}
-  $resources+=@{id="upload-$Id-$index";submissionId=$Id;courseId=$CourseId;title=$displayTitle;type=$item.metadata.type;year=$(if($item.metadata.year){$item.metadata.year}else{'年份待核'});source=$displaySource;license=$License;permission='confirmed';added=(Get-Date -Format 'yyyy-MM-dd');origin=$Origin;answerStatus=$AnswerStatus;url=$path}
+  $resources+=@{id="upload-$Id-$index";submissionId=$Id;courseId=$CourseId;title=$displayTitle;type=$item.metadata.type;year=$(if($item.metadata.year){$item.metadata.year}else{'年份待核'});source=$displaySource;license=$License;permission=$PermissionState;reviewStatus='approved';added=(Get-Date -Format 'yyyy-MM-dd');origin=$Origin;answerStatus=$AnswerStatus;url=$path}
 }
 $tree+=@{path='data/resources.json';mode='100644';type='blob';content=($resources|ConvertTo-Json -Depth 15 -AsArray)}
 $newTree=Invoke-GitHub "$repo/git/trees" 'POST' @{base_tree=$commit.tree.sha;tree=$tree}

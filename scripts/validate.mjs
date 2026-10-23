@@ -2,6 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RESOURCE_TYPES, safeURL } from '../assets/library.js';
+import {UNVERIFIED_LICENSE} from '../upload-service/lib/review-policy.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 export async function validateCatalog(base = root) {
@@ -40,7 +41,7 @@ export async function validateCatalog(base = root) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(resource.added)) errors.push(`${resource.id} 的收录日期无效`);
     if (!['原卷', '回忆版', '学生原创', '教师授权', '其他'].includes(resource.origin)) errors.push(`${resource.id} 的来源类型无效`);
     if (!['无答案', '答案未核对', '答案已校对', '不适用'].includes(resource.answerStatus)) errors.push(`${resource.id} 的答案状态无效`);
-    if (resource.permission !== 'confirmed') errors.push(`${resource.id} 的分享许可尚未确认`);
+    if(resource.permission!=='confirmed'&&!(resource.permission==='unverified'&&resource.reviewStatus==='approved'&&resource.license===UNVERIFIED_LICENSE))errors.push(`${resource.id} 缺少收录审核结论或授权状态不一致`);
     if (!safeURL(resource.url)) errors.push(`${resource.id} 的文件地址无效`);
     if (resource.url?.startsWith('courses/')) {
       if (!resource.url.startsWith(`courses/${resource.courseId}/`)) errors.push(`${resource.id} 的文件不在对应课程目录`);

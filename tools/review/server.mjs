@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import dns from 'node:dns';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {validateReview} from '../../upload-service/lib/review-policy.mjs';
 
 // 上传服务在 Cloudflare 上，直接连会命中它的脚本流量拦截；
 // 本机 PowerShell 走系统代理，因此所有远程调用都交给它，而不是在 Node 里裸连。
@@ -122,14 +123,16 @@ const server = createServer(async (req, res) => {
         if (!/^[a-f0-9-]{36}$/.test(id || '')) return fail(res, 400, '投稿编号无效');
         if (!/^[a-z0-9-]{3,}$/.test(courseId || '')) return fail(res, 400, '课程编号无效');
         for (const value of [title, source, license, origin, answerStatus]) if (!String(value || '').trim()) return fail(res, 400, '发布字段不完整');
-        if(/未获|待确认|不详|不明|未授权/.test(String(license)))return fail(res,400,'公开分享许可尚未核实，不能发布');
+        const courses=JSON.parse(await readFile(path.join(repo,'data/courses.json'),'utf8'));
+        let reviewed;try{reviewed=validateReview(payload,courses);}catch(error){return fail(res,400,error.message);}
         // Publish 读取 .local/review/<id>/，先落地待审文件；重复执行是幂等的。
         await run(PWSH, ['-NoProfile', '-File', adminScript, '-Mode', 'Download', '-Id', id]);
-        const output = await run(PWSH, ['-NoProfile', '-File', adminScript, '-Mode', 'Publish', '-Id', id, '-CourseId', courseId, '-Title', title, '-Source', source, '-License', license, '-Origin', origin, '-AnswerStatus', answerStatus]);
+        const output = await run(PWSH, ['-NoProfile', '-File', adminScript, '-Mode', 'Publish', '-Id', id, '-CourseId', courseId, '-Title', title, '-Source', source, '-License', reviewed.license, '-PermissionState', reviewed.permission, '-Origin', origin, '-AnswerStatus', answerStatus]);
         return json(res, 200, { ok: true, commit: (output.match(/https:\/\/github\.com\/\S+/) || [])[0] || null, output });
       }
       return fail(res, 404, '接口不存在');
     }
+    if(url.pathname==='/review-policy.mjs'){const content=await readFile(path.join(repo,'upload-service/lib/review-policy.mjs'));res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Cache-Control':'no-store'});res.end(content);return;}
     const name = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^\/+/, '');
     if (!/^(index\.html|app\.js|style\.css)$/.test(name)) return fail(res, 404, '未找到');
     const content = await readFile(path.join(publicDir, name));

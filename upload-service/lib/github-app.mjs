@@ -25,5 +25,5 @@ export async function verifyPublished(env,job,sha){
   const response=await fetch(`https://api.github.com/repos/${REPOSITORY}/contents/data/resources.json?ref=${sha}`,{redirect:'error',signal:AbortSignal.timeout(20000),headers:{...headers(authorization),Accept:'application/vnd.github.raw+json'}});
   if(!response.ok)return false;
   const resources=await response.json(),review=JSON.parse(job.review),fields=['courseId','title','type','year','source','license','origin','answerStatus'];
-  if(!Array.isArray(resources))return false;const matching=resources.filter(item=>item.submissionId===job.submission_id&&item.permission==='confirmed'&&fields.every(field=>item[field]===review[field]));return matching.length===job.fileCount;
+  if(!Array.isArray(resources))return false;const matching=resources.filter(item=>item.submissionId===job.submission_id&&item.permission===(review.permission||'confirmed')&&(review.reviewStatus!=='approved'||item.reviewStatus==='approved')&&fields.every(field=>item[field]===review[field]));return matching.length===job.fileCount;
 }

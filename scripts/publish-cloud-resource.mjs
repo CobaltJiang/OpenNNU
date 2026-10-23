@@ -7,11 +7,14 @@ import {resolve,dirname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateCatalog} from './validate.mjs';
 import {MAX_FILE_BYTES,MAX_TOTAL_BYTES,MAX_FILES} from '../upload-service/lib/upload-policy.mjs';
+import {validateReview} from '../upload-service/lib/review-policy.mjs';
 
 export function validateJob(job){
   if(job.repository!=='CobaltJiang/OpenNNU'||!/^[a-f0-9-]{36}$/.test(job.id||'')||!/^[a-f0-9-]{36}$/.test(job.submissionId||''))throw new Error('任务目标无效');
   const review=job.review;
-  if(!review||!/^[a-z0-9-]+$/.test(review.courseId||'')||!review.title||!review.license||!review.source||!review.rightsBasis||/未获|待确认|不详|不明|未授权/.test(review.license))throw new Error('缺少已核实的审核信息');
+  if(!review||!/^[a-z0-9-]+$/.test(review.courseId||'')||review.reviewStatus!=='approved')throw new Error('缺少维护者审核结论');
+  const normalized=validateReview(review,[{id:review.courseId}]);
+  for(const field of ['courseId','title','type','year','source','license','origin','answerStatus','permission','reviewStatus'])if(review[field]!==normalized[field])throw new Error('审核信息不一致，请重新审核');
   if(!Array.isArray(job.files)||!job.files.length||job.files.length>MAX_FILES)throw new Error('文件数量无效');
   let total=0;
   for(const [index,file]of job.files.entries()){
@@ -45,7 +48,7 @@ async function run(){
     const job=validateJob(await(await call()).json());if(job.id!==jobId)throw new Error('任务编号不一致');
     const root=resolve('.'),indexFile=resolve(root,'data/resources.json'),resources=JSON.parse(await readFile(indexFile,'utf8'));
     const existing=resources.filter(item=>item.submissionId===job.submissionId);
-    const fields=['courseId','title','type','year','source','license','origin','answerStatus'];
+    const fields=['courseId','title','type','year','source','license','origin','answerStatus','permission','reviewStatus'];
     if(existing.length){if(existing.length!==job.files.length||existing.some(item=>!fields.every(field=>item[field]===job.review[field])))throw new Error('投稿已经按不同审核结论收录，需要维护者处理');}
     else{
       const courses=JSON.parse(await readFile(resolve(root,'data/courses.json'),'utf8'));if(!courses.some(course=>course.id===job.review.courseId))throw new Error('课程不存在');
@@ -58,7 +61,7 @@ async function run(){
         const response=await call(`/files/${file.index}`);if(!response.body)throw new Error('文件内容为空');
         await pipeline(Readable.fromWeb(response.body),new Transform({transform(chunk,encoding,callback){received+=chunk.length;if(received>file.size)callback(new Error('文件大小超限'));else callback(null,chunk);}}),createWriteStream(destination,{flags:'wx'}));
         if((await stat(destination)).size!==file.size)throw new Error('下载文件大小不一致');
-        resources.push({id:`upload-${job.submissionId}-${file.index}`,submissionId:job.submissionId,publishJobId:jobId,courseId:job.review.courseId,title:job.review.title,type:job.review.type,year:job.review.year,source:job.review.source,license:job.review.license,permission:'confirmed',added:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}),origin:job.review.origin,answerStatus:job.review.answerStatus,url:relative});staged.push(relative);
+        resources.push({id:`upload-${job.submissionId}-${file.index}`,submissionId:job.submissionId,publishJobId:jobId,courseId:job.review.courseId,title:job.review.title,type:job.review.type,year:job.review.year,source:job.review.source,license:job.review.license,permission:job.review.permission,reviewStatus:'approved',added:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Shanghai'}),origin:job.review.origin,answerStatus:job.review.answerStatus,url:relative});staged.push(relative);
       }
       await writeFile(indexFile,`${JSON.stringify(resources,null,2)}\n`);await validateCatalog(root);
       command('config','user.name','OpenNNU Publisher');command('config','user.email','41898282+github-actions[bot]@users.noreply.github.com');

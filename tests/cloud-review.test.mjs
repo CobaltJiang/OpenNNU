@@ -32,7 +32,7 @@ test('匿名和未授权用户看不到队列，只有配置邮箱能引导首�
     assert.equal(f.sqlite.prepare("SELECT count(*) n FROM maintainers WHERE role='owner'").get().n,1);
   }finally{f.sqlite.close();}
 });
-test('维护角色分权、跨站请求拒绝、未知许可不再被标为通过',async()=>{
+test('维护角色分权、跨站请求拒绝，不把未知许可误标成明确授权',async()=>{
   const f=await fixture();try{
     await handleReview(request('config'),f.env,owner,f.deps);
     const grant=await handleReview(request('members',{userId:'reviewer-subject',email:'reviewer@example.test',role:'reviewer',active:true}),f.env,owner,f.deps);assert.equal(grant.status,200);
@@ -65,6 +65,18 @@ test('发布委托只允许读取该任务文件，验证提交后才清除暂�
     assert.equal((await handlePublishJob(call('/complete',{sha:'b'.repeat(40)}),f.env,identity)).status,409);
   }finally{f.sqlite.close();}
 });
+test('普通资料无需填写授权表单即可审核和派发，授权状态保持未核实',async()=>{
+  const f=await fixture();try{
+    const accepted=await handleReview(request(`submissions/${id}/approve`,{version:0}),f.env,owner,f.deps);assert.equal(accepted.status,200);
+    const review=JSON.parse(f.sqlite.prepare('SELECT metadata FROM reviews WHERE submission_id=?').get(id).metadata);
+    assert.equal(review.courseId,'advanced-mathematics-1');assert.equal(review.title,'原文');assert.equal(review.permission,'unverified');assert.equal(review.license,'授权未核实');assert.notEqual(review.source,'待核');
+    Object.assign(f.env,{REVIEW_GITHUB_APP_ID:'1',REVIEW_GITHUB_INSTALLATION_ID:'2',REVIEW_GITHUB_PRIVATE_KEY:'test-placeholder'});
+    f.deps.dispatch=async()=>{};
+    assert.equal((await handleReview(request(`submissions/${id}/publish`,{version:1}),f.env,owner,f.deps)).status,202);
+    const job=f.sqlite.prepare('SELECT review FROM publish_jobs WHERE submission_id=?').get(id);assert.equal(JSON.parse(job.review).permission,'unverified');
+  }finally{f.sqlite.close();}
+});
+
 test('任务派发不明时保持锁定，不因超时误删或重复发布',async()=>{
   const f=await fixture();try{
     Object.assign(f.env,{REVIEW_GITHUB_APP_ID:'1',REVIEW_GITHUB_INSTALLATION_ID:'2',REVIEW_GITHUB_PRIVATE_KEY:'test-placeholder'});
@@ -72,8 +84,8 @@ test('任务派发不明时保持锁定，不因超时误删或重复发布',asy
     const response=await handleReview(request(`submissions/${id}/publish`,{version:1}),f.env,owner,f.deps);assert.equal((await response.json()).state,'dispatch_unknown');assert.equal(f.objects.size,1);assert.equal(f.sqlite.prepare('SELECT state FROM submissions WHERE id=?').get(id).state,'publishing');
   }finally{f.sqlite.close();}
 });
-test('发布器拒绝任意仓库、路径越界或未授权资料',()=>{
+test('发布器拒绝任意仓库，不把默认收录伪装为已获许可',()=>{
   assert.throws(()=>validateJob({repository:'other/repo'}),/目标/);
-  assert.throws(()=>validateReview({...approved,permissionConfirmed:false},courseList),/许可/);
+  assert.equal(validateReview({...approved,permissionConfirmed:false},courseList).permission,'unverified');
   assert.throws(()=>validateReview({...approved,courseId:'unknown'},courseList),/课程/);
 });

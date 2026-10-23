@@ -2,20 +2,11 @@ import {can,memberFor,audit,boundedJSON,requireMutationOrigin,reviewJSON,reject}
 import {publisherConfigured,dispatchPublish,verifyPublished} from './github-app.mjs';
 import courseIndex from '../data/course-index.json' with {type:'json'};
 import {verifyActionsIdentity} from './actions-identity.mjs';
+import {validateReview} from './review-policy.mjs';
+export {validateReview} from './review-policy.mjs';
 const uuid=/^[a-f0-9-]{36}$/;
-const TYPES=['历年试卷','课程笔记','复习提纲','习题解析','其他资料'];
-const ORIGINS=['原卷','回忆版','学生原创','教师授权','其他'];
-const ANSWERS=['无答案','答案未核对','答案已校对','不适用'];
 export async function reviewCourses(){
   return courseIndex;
-}
-export function validateReview(body,courses){
-  const required={courseId:100,title:80,type:30,year:40,source:300,license:100,rightsBasis:1000,origin:30,answerStatus:30};const result={};
-  for(const [key,max]of Object.entries(required)){if(typeof body[key]!=='string'||!body[key].trim()||body[key].length>max)reject('请完整填写公开信息、许可和授权依据');result[key]=body[key].trim();}
-  if(!courses.some(course=>course.id===result.courseId))reject('课程不存在，请从候选中选择');
-  if(!TYPES.includes(result.type)||!ORIGINS.includes(result.origin)||!ANSWERS.includes(result.answerStatus))reject('资料类型或来源状态无效');
-  if(body.permissionConfirmed!==true||/未获|待确认|不详|不明|未授权/.test(result.license)||/未获明确授权/.test(result.source))reject('尚未确认公开分享许可，不能通过审核');
-  return result;
 }
 export const sha256=async text=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)))].map(x=>x.toString(16).padStart(2,'0')).join('');
 export async function handleReview(request,env,user,deps={}){
@@ -53,7 +44,7 @@ export async function handleReview(request,env,user,deps={}){
     const row=await env.DB.prepare('SELECT * FROM submissions WHERE id=?').bind(id).first();if(!row)reject('投稿不存在',404);
     if(action==='approve'){
       if(row.state!=='pending')reject('此投稿正在发布或已处理',409);
-      const data=validateReview(body,await(deps.courses||reviewCourses)());
+      const data=validateReview(body,await(deps.courses||reviewCourses)(),JSON.parse(row.metadata));
       const old=await env.DB.prepare('SELECT * FROM reviews WHERE submission_id=?').bind(id).first();
       if(body.version!==(old?.version||0))reject('审核信息已变化，请刷新',409);
       const result=await env.DB.prepare("INSERT INTO reviews (submission_id,version,metadata,actor,updated) SELECT ?,1,?,?,? WHERE EXISTS (SELECT 1 FROM submissions WHERE id=? AND state='pending') AND NOT EXISTS (SELECT 1 FROM publish_jobs WHERE submission_id=? AND state IN ('queued','dispatch_unknown','running')) ON CONFLICT(submission_id) DO UPDATE SET version=reviews.version+1,metadata=excluded.metadata,actor=excluded.actor,updated=excluded.updated WHERE reviews.version=?").bind(id,JSON.stringify(data),member.user_id,Date.now(),id,id,body.version).run();
@@ -76,7 +67,7 @@ export async function handleReview(request,env,user,deps={}){
     if(row.state!=='pending')reject('此投稿已处理',409);
     if(!publisherConfigured(env))reject('GitHub App 尚未配置：可以审核，但暂不能公开发布。',503);
     const review=await env.DB.prepare('SELECT * FROM reviews WHERE submission_id=?').bind(id).first();if(!review||review.version!==body.version)reject('请先保存审核结论，或刷新审核版本',409);
-    validateReview({...JSON.parse(review.metadata),permissionConfirmed:true},await(deps.courses||reviewCourses)());
+    validateReview(JSON.parse(review.metadata),await(deps.courses||reviewCourses)());
     const jobId=crypto.randomUUID();
     const inserted=await env.DB.prepare("INSERT INTO publish_jobs (id,submission_id,state,token_hash,expires,actor,review,created) SELECT ?,?,'queued',?,?,?,?,? WHERE EXISTS (SELECT 1 FROM submissions WHERE id=? AND state='pending') AND EXISTS (SELECT 1 FROM reviews WHERE submission_id=? AND version=?) AND NOT EXISTS (SELECT 1 FROM publish_jobs WHERE submission_id=? AND state IN ('queued','dispatch_unknown','running'))").bind(jobId,id,'unclaimed',Date.now()+3600000,member.user_id,review.metadata,Date.now(),id,id,review.version,id).run();
     if(!inserted.meta.changes)reject('此投稿已有发布任务，请刷新',409);

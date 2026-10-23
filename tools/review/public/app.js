@@ -1,5 +1,4 @@
-const DEFAULT_SOURCE = '';
-const DEFAULT_LICENSE = '';
+import {DEFAULT_SOURCE,UNVERIFIED_LICENSE as DEFAULT_LICENSE} from '/review-policy.mjs';
 const ORIGINS = ['原卷', '回忆版', '学生原创', '教师授权', '其他'];
 const ANSWERS = ['无答案', '答案未核对', '答案已校对', '不适用'];
 
@@ -62,19 +61,19 @@ function card(item) {
       </div>
     </div>
     <form class="form" data-form>
-      <div class="field"><label>课程（可搜索课程名或课程号）</label><input name="course" list="course-list" value="${esc(courseValue)}" required></div>
+      <details class="edit-details"><summary>修改信息 / 授权（选填）</summary><div class="field"><label>课程（可搜索课程名或课程号）</label><input name="course" list="course-list" value="${esc(courseValue)}" required></div>
       <div class="field"><label>公开标题</label><input name="title" value="${esc(meta.title || '')}" maxlength="80" required></div>
       <div class="field"><label>公开来源说明</label><textarea name="source" maxlength="300" required>${esc(DEFAULT_SOURCE)}</textarea></div>
-      <div class="field"><label>许可</label><input name="license" value="${esc(DEFAULT_LICENSE)}" maxlength="80" required></div>
+      <div class="field"><label>许可（默认未核实）</label><input name="license" value="${esc(DEFAULT_LICENSE)}" maxlength="80"></div><label><input type="checkbox" name="permissionConfirmed"> 已取得明确授权（选填）</label><div class="field"><label>授权依据（选填，不公开）</label><textarea name="rightsBasis" maxlength="1000"></textarea></div>
       <div class="row2">
         <div class="field"><label>来源类型</label><select name="origin">${ORIGINS.map(v => `<option${v === '其他' ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
         <div class="field"><label>答案状态</label><select name="answer">${ANSWERS.map(v => `<option${v === '不适用' ? ' selected' : ''}>${v}</option>`).join('')}</select></div>
       </div>
-      <div class="actions">
-        <button type="submit" class="button button-primary">通过并公开</button>
+      </details><div class="actions">
+        <button type="submit" class="button button-primary">通过并公开 ✓</button>
         <button type="button" class="button button-danger" data-reject>拒绝并删除</button>
       </div>
-      <p class="status" data-status></p>
+      <p class="meta">点击通过即公开收录；默认如实标记「授权未核实」。</p><p class="status" data-status></p>
     </form>
   </div>
 </article>`;
@@ -118,14 +117,12 @@ document.getElementById('list').addEventListener('submit', async event => {
   const data = new FormData(form);
   const course = resolveCourse(data.get('course'));
   if (!course) { status.textContent = '课程无法匹配到目录，请从候选里选一个。'; status.className = 'status err'; return; }
-  const summary = `标题：${data.get('title')}\n课程：${courseLabel(course)}\n许可：${data.get('license')}\n\n确认公开这两项？文件会提交到 main 并立即对所有人可见。`;
-  if (!confirm(summary)) return;
   button.disabled = true; status.textContent = '正在提交…'; status.className = 'status';
   try {
     const result = await api('/api/publish', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: cardEl.dataset.id, courseId: course.id, title: data.get('title'), source: data.get('source'), license: data.get('license'), origin: data.get('origin'), answerStatus: data.get('answer') }),
+      body: JSON.stringify({ id: cardEl.dataset.id, courseId: course.id, title: data.get('title'), source: data.get('source'), license: data.get('license'), origin: data.get('origin'), answerStatus: data.get('answer'), permissionConfirmed: data.get('permissionConfirmed') === 'on', rightsBasis: data.get('rightsBasis') }),
     });
     status.textContent = result.commit ? `已收录：${result.commit}` : '已收录。';
     status.className = 'status ok';
