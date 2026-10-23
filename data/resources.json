@@ -130,5 +130,39 @@
     "origin": "其他",
     "answerStatus": "答案未核对",
     "url": "courses/nnu-1017000150/submissions/f655f60a-ebdc-4fde-b218-b77327fb0c6c/3.pdf"
+  },
+  {
+    "id": "upload-6f0a46ec-7996-4e55-8e27-d2f0cfe449bb-0",
+    "submissionId": "6f0a46ec-7996-4e55-8e27-d2f0cfe449bb",
+    "publishJobId": "1278c7a5-88a0-4dd3-a751-fa50ee6ac1d5",
+    "courseId": "nnu-1017000003",
+    "title": "法理学背诵提纲",
+    "type": "复习提纲",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1017000003/submissions/6f0a46ec-7996-4e55-8e27-d2f0cfe449bb/0.docx"
+  },
+  {
+    "id": "upload-6f0a46ec-7996-4e55-8e27-d2f0cfe449bb-1",
+    "submissionId": "6f0a46ec-7996-4e55-8e27-d2f0cfe449bb",
+    "publishJobId": "1278c7a5-88a0-4dd3-a751-fa50ee6ac1d5",
+    "courseId": "nnu-1017000003",
+    "title": "法理学背诵提纲",
+    "type": "复习提纲",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1017000003/submissions/6f0a46ec-7996-4e55-8e27-d2f0cfe449bb/1.docx"
   }
 ]
