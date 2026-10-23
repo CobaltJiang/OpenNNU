@@ -164,5 +164,39 @@
     "origin": "其他",
     "answerStatus": "答案未核对",
     "url": "courses/nnu-1017000003/submissions/6f0a46ec-7996-4e55-8e27-d2f0cfe449bb/1.docx"
+  },
+  {
+    "id": "upload-a31fed0f-302b-427f-a01d-4eb0c20ffcfb-0",
+    "submissionId": "a31fed0f-302b-427f-a01d-4eb0c20ffcfb",
+    "publishJobId": "762f6fce-bc67-4cae-8027-96c801bc4202",
+    "courseId": "nnu-1025009028",
+    "title": "马原+史纲",
+    "type": "历年试卷",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1025009028/submissions/a31fed0f-302b-427f-a01d-4eb0c20ffcfb/0.zip"
+  },
+  {
+    "id": "upload-a31fed0f-302b-427f-a01d-4eb0c20ffcfb-1",
+    "submissionId": "a31fed0f-302b-427f-a01d-4eb0c20ffcfb",
+    "publishJobId": "762f6fce-bc67-4cae-8027-96c801bc4202",
+    "courseId": "nnu-1025009028",
+    "title": "马原+史纲",
+    "type": "历年试卷",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1025009028/submissions/a31fed0f-302b-427f-a01d-4eb0c20ffcfb/1.zip"
   }
 ]
