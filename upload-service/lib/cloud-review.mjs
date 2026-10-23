@@ -1,5 +1,5 @@
 import {can,memberFor,audit,boundedJSON,requireMutationOrigin,reviewJSON,reject} from './review-auth.mjs';
-import {publisherConfiguration,publisherConfigurationMessage,dispatchPublish,verifyPublished} from './github-app.mjs';
+import {publisherConfiguration,publisherConfigurationMessage,publisherFailureMessage,dispatchPublish,verifyPublished} from './github-app.mjs';
 import courseIndex from '../data/course-index.json' with {type:'json'};
 import {verifyActionsIdentity} from './actions-identity.mjs';
 import {validateReview} from './review-policy.mjs';
@@ -74,7 +74,7 @@ export async function handleReview(request,env,user,deps={}){
     if(!inserted.meta.changes)reject('此投稿已有发布任务，请刷新',409);
     await env.DB.prepare("UPDATE submissions SET state='publishing' WHERE id=? AND state='pending'").bind(id).run();await audit(env,member.user_id,'publish.queue',id,{job:jobId,version:review.version});
     try{await(deps.dispatch||dispatchPublish)(env,{id:jobId},new URL(request.url).origin);}
-    catch(error){const state=error.definite?'failed':'dispatch_unknown';const changed=await env.DB.prepare("UPDATE publish_jobs SET state=?,error=? WHERE id=? AND state='queued'").bind(state,error.definite?'发布失败：GitHub 未接受发布任务，请核对 App 安装、仓库权限与工作流配置后重试。':'工作流派发未确认，请核对 GitHub Actions 后再操作。',jobId).run();if(error.definite&&changed.meta.changes)await env.DB.prepare("UPDATE submissions SET state='pending' WHERE id=? AND state='publishing'").bind(id).run();return reviewJSON({job:jobId,state:changed.meta.changes?state:'running',message:changed.meta.changes?(error.definite?'发布失败：GitHub 未接受发布任务，请核对 App 安装、仓库权限与工作流配置后重试。':'工作流派发未确认，请检查 GitHub Actions，不要重复公开。'):'工作流已开始处理，请刷新队列查看。'},202);}
+    catch(error){const state=error.definite?'failed':'dispatch_unknown',message=error.definite?publisherFailureMessage(error):'工作流派发未确认，请检查 GitHub Actions，不要重复公开。';const changed=await env.DB.prepare("UPDATE publish_jobs SET state=?,error=? WHERE id=? AND state='queued'").bind(state,message,jobId).run();if(error.definite&&changed.meta.changes)await env.DB.prepare("UPDATE submissions SET state='pending' WHERE id=? AND state='publishing'").bind(id).run();return reviewJSON({job:jobId,state:changed.meta.changes?state:'running',message:changed.meta.changes?message:'工作流已开始处理，请刷新队列查看。'},202);}
     return reviewJSON({job:jobId,state:'queued'},202);
   }catch(error){return reviewJSON({error:error.status?error.message:'审核服务暂不可用，请稍后重试',subject:error.status===403?user?.userId:undefined},error.status||503);}
 }

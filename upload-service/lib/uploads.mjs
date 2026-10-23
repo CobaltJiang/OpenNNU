@@ -1,4 +1,5 @@
 import { MAX_FILES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, FILE_SIZE_ERROR, TOTAL_SIZE_ERROR } from './upload-policy.mjs';
+import { checkPublisher } from './github-app.mjs';
 export { MAX_FILE_BYTES };
 export const MAX_BYTES = MAX_TOTAL_BYTES;
 export const EXTENSIONS = /\.(pdf|docx|xlsx|pptx|zip|png|jpe?g|webp|txt|csv)$/i;
@@ -132,6 +133,7 @@ export function exactLengthStream(expected) {
 async function admin(request,env) {
   if (request.headers.get('Authorization') !== `Bearer ${env.UPLOAD_ADMIN_KEY}`) fail('未授权',401);
   const url=new URL(request.url);
+  if(url.pathname==='/api/admin/publisher-check'&&request.method==='GET')return json(await checkPublisher(env));
   if(url.pathname==='/api/admin/pending' && request.method==='GET') {
     const rows=await env.DB.prepare("SELECT * FROM submissions WHERE state='pending' ORDER BY created LIMIT 100").all();
     return json(rows.results.map(row=>({...row,metadata:JSON.parse(row.metadata),files:JSON.parse(row.files)})));

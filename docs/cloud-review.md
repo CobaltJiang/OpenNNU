@@ -35,6 +35,14 @@
 
 `GITHUB_TOKEN` 推送不自动触发 Pages，因此发布器会显式触发 `pages.yml`。提交作者标为 CobaltJiang，提交者为 OpenNNU Publisher；实际审批者保留在私有审核日志，不公开其邮箱。
 
+### 发布故障检查
+
+发布失败时保留已审核信息和待审文件，刷新后可直接重试「发布到 GitHub」，无需重新上传。明确拒绝才返回待发布；超时或上游 5xx 等结果不明时保持锁定，先核对 GitHub Actions，不重复派发。
+
+管理员可使用服务端管理密钥访问 `GET /api/admin/publisher-check`，检查 App 令牌、工作流和派发权限。诊断只尝试固定的不存在分支，不运行工作流、不读取或公开投稿；结果仅含阶段、状态码和固定错误分类，不含密钥或上游原始正文。管理密钥不得下发浏览器。
+
+Workers 端请求使用 `redirect: 'manual'` 并拒绝 3xx；不要改回该运行时不支持的 `redirect: 'error'`，也不要自动跟随可能泄漏令牌的跳转。签名与 OIDC 验签显式导入 `node:buffer`，不依赖本机 Node 的全局变量。
+
 ## 域名与 DNS
 
 Sites 绑定 `review.cybercobalt.xyz` 后，会返回一条 CNAME 和两条所有权验证 TXT 记录。按工具返回的精确值添加，不要覆盖其他服务已有记录；等 Sites 显示域名和 SSL 均有效后，再把正式入口切到该域名。单纯修改域名不能保证所有地区的直连网络可达。

@@ -53,6 +53,15 @@ test('错误来源、失效会话、滥用配额和无许可上传均拒绝',asy
     assert.equal((await handleUpload(new Request(`${base}/api/upload`,{method:'POST',headers:{Origin:origin,'X-Upload-Ticket':ticket},body:draft()}),env)).status,403);
   }finally{db.close();}
 });
+
+test('发布诊断仅接受管理密钥，不返回配置值或修改投稿',async()=>{
+  const {env,db}=fixture();try{
+    assert.equal((await handleUpload(new Request(`${base}/api/admin/publisher-check`),env)).status,401);
+    const response=await handleUpload(new Request(`${base}/api/admin/publisher-check`,{headers:{Authorization:`Bearer ${env.UPLOAD_ADMIN_KEY}`}}),env);
+    assert.equal(response.status,200);const result=await response.json();assert.equal(result.ok,false);assert.equal(result.configuration.missing.length,3);
+    assert.equal(db.prepare('SELECT count(*) n FROM submissions').get().n,0);assert.doesNotMatch(JSON.stringify(result),/test-only-secret/);
+  }finally{db.close();}
+});
 test('网页主投稿入口是真文件表单，不再跳转 GitHub 或包含令牌',async()=>{
   const app=await readFile(new URL('../assets/app.js',import.meta.url),'utf8');
   assert.match(app,/type="file" name="files" multiple required/);assert.match(app,/submitUpload\(site.uploadService/);assert.ok(app.includes('${e(UPLOAD_LIMIT_HINT)}'));assert.equal(UPLOAD_LIMIT_HINT,'1–5 个文件 · 单个 ≤ 90 MB · 合计 ≤ 300 MB');assert.ok(!app.includes('window.open(url'));assert.ok(!app.includes('需登录 GitHub'));
