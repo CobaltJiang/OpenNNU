@@ -2,9 +2,15 @@
 
 **南师大开放课程资料共享计划 · 让后来的人，不必再从零开始。**
 
-[浏览 Web 资料库](https://cobaltjiang.github.io/OpenNNU/) · [贡献资料](CONTRIBUTING.md) · [反馈与纠错](https://github.com/CobaltJiang/OpenNNU/issues/new?template=correction.yml)
+[浏览资料库](https://cobaltjiang.github.io/OpenNNU/) · [直接上传文件](https://cobaltjiang.github.io/OpenNNU/#/contribute) · [维护者审核](https://opennnu-upload.undefinedcobalt.chatgpt.site/review) · [反馈与纠错](https://github.com/CobaltJiang/OpenNNU/issues/new?template=correction.yml)
 
 OpenNNU 由学生发起，收集、整理可以公开分享的课程资料，让零散的学习积累能够被找到、被理解、被接着完善。项目非学校官方网站。
+
+## 怎么用
+
+- 找资料：搜索课程名、课程号或教师，也可按开课单位、校区和课程类型筛选。
+- 传资料：选择课程、填写信息并上传文件，无需 GitHub 或 ChatGPT 账号，不用先传网盘。
+- 做维护：进入云端审核页，登录并取得维护权限后，一键「通过并公开」。上传、待审存储和发布均在云端完成，不需要维护者电脑开机或缓存文件。
 
 ## 项目缘起
 
@@ -42,13 +48,13 @@ OpenNNU 由学生发起，收集、整理可以公开分享的课程资料，让
 
 ## 当前进度
 
-已导入提供的本学期开课清单：**2,011 门课程、5,065 个教学班、38 个开课单位**。按课程号合并教学班，同名但课程号不同的课程分别保留。正式收录资料为 **0 份**，与开课目录独立统计。
+已导入提供的本学期开课清单：**2,011 门课程、5,065 个教学班、38 个开课单位**。按课程号合并教学班，同名但课程号不同的课程分别保留。已开始收录资料，最新数量以网站和 [公开索引](data/resources.json) 为准；开课目录不代表对应课程已有资料。
 
 Web 界面支持按课程名、课程号和教师检索，按开课单位、校区和课程类型筛选，分页浏览、教学班详情、浏览器收藏及免登录文件投稿。资料经审核后收录。
 
 ## 开始贡献
 
-在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 选择文件并填写资料信息，直接上传，不需要 GitHub 或 ChatGPT 账号，也不用填写网盘链接。文件先私下待审，审核通过后由维护者的 GitHub 账号收录。每次 1–5 个文件，单个不超过 90 MB、合计不超过 300 MB。
+在 [Web 投稿页](https://cobaltjiang.github.io/OpenNNU/#/contribute) 选择文件并填写资料信息。每次 **1–5 个文件，单个不超过 90 MiB、合计不超过 300 MiB**（界面简写为 MB）。文件直接上传到云端私有待审区，审核后由发布工作流收录到本仓库。
 
 熟悉 Git 的同学可阅读 [贡献指南](CONTRIBUTING.md) 后提交 Pull Request。欢迎原创笔记、复习提纲、习题解析和取得分享许可的往年试卷。
 
@@ -87,20 +93,27 @@ courses/
 docs/catalog.md          元数据规范与添加示例
 scripts/                 目录校验、构建与本地预览
 tests/                   检索、安全地址、数据规则测试
-upload-service/          免登录上传后台、私有待审存储
+upload-service/          免登录上传、云端审核、私有待审存储
+docs/cloud-review.md     多人维护、发布授权与下载镜像说明
 .github/                 投稿模板与自动检查、部署流程
 ```
 
 ## 网站更新
 
-云端审核、多人维护权限和未来下载镜像接口见 [云端审核说明](docs/cloud-review.md)。审核页面需要登录和维护者授权；GitHub App 未配置时，公开发布保持关闭。
+[云端审核页](https://opennnu-upload.undefinedcobalt.chatgpt.site/review) 需要登录和维护者授权。页面优先展示文件，修改信息默认折叠，处理后切换下一份；所有者、审核者和发布者分别授权，操作留有日志。GitHub App 已按仅限本仓库的权限配置；未配置或暂不可用时，仍可保存审核结论，保留在待发布状态。
 
-`main` 分支的提交通过 GitHub Actions 校验、测试、构建后，部署到 GitHub Pages。Pull Request 只进行检查，不部署。已收录资料保存在可审查的 JSON 与文件目录中。独立的上传服务使用 D1 与私有 R2 暂存投稿；前端不含密钥，GitHub 凭据不离开维护者本机。维护流程见 [上传服务说明](upload-service/UPLOADS.md)。
+流程为：**访客上传 → 云端私有待审 → 维护者审核 → GitHub Actions 收录 → GitHub Pages 更新**。上传服务使用 D1 保存投稿信息、私有 R2 暂存文件；发布工作流直接从云端取件，不经过维护者电脑。GitHub App 私钥只存于服务端机密配置，不进入前端、仓库或下载镜像。
+
+`main` 分支的提交通过校验、测试、构建后部署到 GitHub Pages，Pull Request 只检查不部署。云端审核、多人维护接口与发布配置见 [云端审核说明](docs/cloud-review.md)，上传后台部署见 [上传服务说明](upload-service/UPLOADS.md)。本机审核工具仅为可选兼容入口，不是日常审核必需项。
+
+下载提供本站文件和 GitHub 原始文件备用入口，已预留自有 CDN／镜像配置，尚未启用第三方公共代理。下载镜像不解决上传接口的 `Failed to fetch`；两条链路需分别排查。自定义审核域名仍待 DNS 与证书验证，完成前使用上面的云端原域名。
 
 首次部署需在仓库 `Settings → Pages → Build and deployment → Source` 选择 `GitHub Actions`。完整流程见 [.github/workflows/pages.yml](.github/workflows/pages.yml)。
 
 ## 来源与许可
 
-代码使用 [MIT 许可证](LICENSE)。**该许可证不覆盖课程资料**：每份资料单独记录作者、来源与分享许可，原卷、回忆版、自编题及答案校对情况应如实标注。没有确认分享许可的资料不放入公开仓库，也不写入公开索引。
+代码使用 [MIT 许可证](LICENSE)。**该许可证不覆盖课程资料**：每份资料单独记录来源与许可状态，原卷、回忆版、自编题及答案校对情况应如实标注。
+
+收录审核与版权授权分开：普通投稿默认「授权未核实」，不会因购买资料或审核通过而自动标成已获授权；只有明确许可并记录依据后才标为已确认。收录不代表获得转载授权，也不替代原作者的许可。投稿原始备注和授权依据仅供维护者查看，不随公开索引发布。
 
 发现资料错误或需要更正、撤下，请通过 [反馈模板](https://github.com/CobaltJiang/OpenNNU/issues/new?template=correction.yml) 联系维护者。
