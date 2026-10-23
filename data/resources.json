@@ -28,5 +28,39 @@
     "origin": "其他",
     "type": "课程笔记",
     "id": "upload-1c8a0a35-123f-4826-948a-b9e18be9ebba-0"
+  },
+  {
+    "id": "upload-5fab46de-6823-48fc-bb2b-bf51d05a7a8c-0",
+    "submissionId": "5fab46de-6823-48fc-bb2b-bf51d05a7a8c",
+    "publishJobId": "030db78b-2603-4461-80b4-d6fb7504de1b",
+    "courseId": "nnu-1017000019",
+    "title": "经济法学（奚庆）笔记及考点",
+    "type": "复习提纲",
+    "year": "2024（疑似）",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1017000019/submissions/5fab46de-6823-48fc-bb2b-bf51d05a7a8c/0.docx"
+  },
+  {
+    "id": "upload-5fab46de-6823-48fc-bb2b-bf51d05a7a8c-1",
+    "submissionId": "5fab46de-6823-48fc-bb2b-bf51d05a7a8c",
+    "publishJobId": "030db78b-2603-4461-80b4-d6fb7504de1b",
+    "courseId": "nnu-1017000019",
+    "title": "经济法学（奚庆）笔记及考点",
+    "type": "复习提纲",
+    "year": "2024（疑似）",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-23",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1017000019/submissions/5fab46de-6823-48fc-bb2b-bf51d05a7a8c/1.docx"
   }
 ]
