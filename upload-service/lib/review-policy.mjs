@@ -35,3 +35,16 @@ export async function acceptSubmission(api,{id,version,metadata,publish=false}){
   try{return {approved:true,...await api(`submissions/${id}/publish`,{version:saved.version})};}
   catch(error){throw Object.assign(new Error(`审核已通过，但尚未公开：${error.message}`),{reviewVersion:saved.version});}
 }
+
+// Approved submissions publish their existing review; never approve them a second time.
+export function publishSubmission(api,{id,version}){
+  if(!Number.isSafeInteger(version)||version<1)throw new Error('缺少当前审核版本，请刷新队列');
+  return api(`submissions/${id}/publish`,{version});
+}
+export const reviewStage=item=>item.state==='publishing'?'publishing':item.review_version?'approved':'pending';
+export function publicationNotice(result){
+  if(result.state==='failed')return result.message||'发布失败，资料仍在待发布，可重试。';
+  if(result.state==='dispatch_unknown')return result.message||'发布派发尚未确认，请核对 GitHub Actions；请勿重复发布。';
+  if(result.state==='running')return 'GitHub 发布任务正在执行，请稍后刷新队列。';
+  return '已提交 GitHub 发布任务，正在发布；完成后会自动移出队列。';
+}

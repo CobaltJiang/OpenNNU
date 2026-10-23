@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {reviewDefaults,validateReview,acceptSubmission,UNVERIFIED_LICENSE,DEFAULT_SOURCE} from '../upload-service/lib/review-policy.mjs';
+import {reviewDefaults,validateReview,acceptSubmission,publishSubmission,publicationNotice,reviewStage,UNVERIFIED_LICENSE,DEFAULT_SOURCE} from '../upload-service/lib/review-policy.mjs';
 import {validateJob} from '../scripts/publish-cloud-resource.mjs';
 const courses=[{id:'mechanics',name:'力学',code:'1007003065'}];
 const draft={course:'力学（1007003065）',title:'往年试卷',type:'历年试卷',source:'购买渠道与私密联系方式',year:''};
@@ -34,4 +34,21 @@ test('一键通过按序保存和派发；审核者或未配置发布授权时�
 test('审核页默认展示预览与单个通过按钮，没有二次通过弹窗或必填许可',async()=>{
   const cloud=await readFile(new URL('../upload-service/app/review/review-console.tsx',import.meta.url),'utf8');
   assert.match(cloud,/acceptSubmission\(api/);assert.match(cloud,/review-preview/);assert.doesNotMatch(cloud,/confirm\(|prompt\(|name="permissionConfirmed".*required/);
+});
+
+test('独立发布只调用 publish 并携带现有审核版本，不重复 approve',async()=>{
+  const calls=[];const api=async(path,body)=>{calls.push({path,body});return{job:'existing',state:'queued'};};
+  await publishSubmission(api,{id:'approved',version:7});assert.deepEqual(calls,[{path:'submissions/approved/publish',body:{version:7}}]);
+  assert.throws(()=>publishSubmission(api,{id:'missing',version:0}),/审核版本/);assert.equal(calls.length,1);
+  assert.equal(reviewStage({state:'pending',review_version:7}),'approved');assert.equal(reviewStage({state:'publishing',review_version:7}),'publishing');assert.equal(reviewStage({state:'pending',review_version:null}),'pending');
+  assert.match(publicationNotice({state:'failed'}),/失败/);assert.match(publicationNotice({state:'dispatch_unknown'}),/未确认/);assert.match(publicationNotice({state:'queued'}),/正在发布/);
+});
+test('审核页对已审核资料提供独立发布入口，失败和成功均刷新队列',async()=>{
+  const source=await readFile(new URL('../upload-service/app/review/review-console.tsx',import.meta.url),'utf8');
+  assert.match(source,/publishSubmission\(api,\{id:item.id,version\}\)/);
+  assert.match(source,/approved&&item.state==='pending'&&config.capabilities.includes\('publish'\)/);
+  assert.match(source,/disabled=\{busy\|\|!canPublish\}/);assert.match(source,/发布到 GitHub/);
+  assert.match(source,/!approved&&config.capabilities.includes\('approve'\)/);
+  assert.match(source,/onFailed=\{async message=>\{setNotice\(''\);await load\(\);setError\(message\);\}\}/);
+  assert.match(source,/setInterval\(\(\)=>void load\(\),10000\)/);
 });

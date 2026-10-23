@@ -1,5 +1,5 @@
 import {can,memberFor,audit,boundedJSON,requireMutationOrigin,reviewJSON,reject} from './review-auth.mjs';
-import {publisherConfigured,dispatchPublish,verifyPublished} from './github-app.mjs';
+import {publisherConfiguration,publisherConfigurationMessage,dispatchPublish,verifyPublished} from './github-app.mjs';
 import courseIndex from '../data/course-index.json' with {type:'json'};
 import {verifyActionsIdentity} from './actions-identity.mjs';
 import {validateReview} from './review-policy.mjs';
@@ -14,9 +14,9 @@ export async function handleReview(request,env,user,deps={}){
     if(request.method!=='GET')requireMutationOrigin(request);
     const member=await memberFor(env,user);const path=new URL(request.url).pathname;
     const requireRole=capability=>{if(!can(member,capability))reject('没有此操作权限',403);};requireRole('view');
-    if(path==='/api/review/config'&&request.method==='GET')return reviewJSON({user:{id:member.user_id,email:member.email,role:member.role},capabilities:['view','approve','publish','reject','recover','members','audit'].filter(action=>can(member,action)),publisherConfigured:publisherConfigured(env),courses:await(deps.courses||reviewCourses)()});
+    if(path==='/api/review/config'&&request.method==='GET'){const configuration=publisherConfiguration(env);return reviewJSON({user:{id:member.user_id,email:member.email,role:member.role},capabilities:['view','approve','publish','reject','recover','members','audit'].filter(action=>can(member,action)),publisherConfigured:configuration.configured,publisherConfiguration:configuration,courses:await(deps.courses||reviewCourses)()});}
     if(path==='/api/review/queue'&&request.method==='GET'){
-      const rows=await env.DB.prepare("SELECT s.*,r.version AS review_version,r.metadata AS reviewed FROM submissions s LEFT JOIN reviews r ON r.submission_id=s.id WHERE s.state IN ('pending','publishing') ORDER BY s.created LIMIT 100").all();
+      const rows=await env.DB.prepare("SELECT s.*,r.version AS review_version,r.metadata AS reviewed,(SELECT j.state FROM publish_jobs j WHERE j.submission_id=s.id ORDER BY j.created DESC,j.rowid DESC LIMIT 1) AS publish_state,(SELECT j.error FROM publish_jobs j WHERE j.submission_id=s.id ORDER BY j.created DESC,j.rowid DESC LIMIT 1) AS publish_error FROM submissions s LEFT JOIN reviews r ON r.submission_id=s.id WHERE s.state IN ('pending','publishing') ORDER BY s.created LIMIT 100").all();
       return reviewJSON(rows.results.map(row=>({...row,metadata:JSON.parse(row.metadata),files:JSON.parse(row.files).map(({name,size},index)=>({name,size,index})),reviewed:row.reviewed?JSON.parse(row.reviewed):null})));
     }
     if(path==='/api/review/members'){
@@ -65,7 +65,8 @@ export async function handleReview(request,env,user,deps={}){
     }
     const active=await env.DB.prepare("SELECT id,state FROM publish_jobs WHERE submission_id=? AND state IN ('queued','dispatch_unknown','running') ORDER BY created DESC LIMIT 1").bind(id).first();if(active)return reviewJSON({job:active.id,state:active.state});
     if(row.state!=='pending')reject('此投稿已处理',409);
-    if(!publisherConfigured(env))reject('GitHub App 尚未配置：可以审核，但暂不能公开发布。',503);
+    const configuration=publisherConfiguration(env);
+    if(!configuration.configured)reject(publisherConfigurationMessage(configuration),503);
     const review=await env.DB.prepare('SELECT * FROM reviews WHERE submission_id=?').bind(id).first();if(!review||review.version!==body.version)reject('请先保存审核结论，或刷新审核版本',409);
     validateReview(JSON.parse(review.metadata),await(deps.courses||reviewCourses)());
     const jobId=crypto.randomUUID();
@@ -73,7 +74,7 @@ export async function handleReview(request,env,user,deps={}){
     if(!inserted.meta.changes)reject('此投稿已有发布任务，请刷新',409);
     await env.DB.prepare("UPDATE submissions SET state='publishing' WHERE id=? AND state='pending'").bind(id).run();await audit(env,member.user_id,'publish.queue',id,{job:jobId,version:review.version});
     try{await(deps.dispatch||dispatchPublish)(env,{id:jobId},new URL(request.url).origin);}
-    catch(error){const state=error.definite?'failed':'dispatch_unknown';const changed=await env.DB.prepare("UPDATE publish_jobs SET state=?,error=? WHERE id=? AND state='queued'").bind(state,'工作流派发未确认，请核对 GitHub Actions 后再操作。',jobId).run();if(error.definite&&changed.meta.changes)await env.DB.prepare("UPDATE submissions SET state='pending' WHERE id=? AND state='publishing'").bind(id).run();return reviewJSON({job:jobId,state:changed.meta.changes?state:'running',message:'工作流派发未确认，请检查 GitHub Actions，不要重复公开。'},202);}
+    catch(error){const state=error.definite?'failed':'dispatch_unknown';const changed=await env.DB.prepare("UPDATE publish_jobs SET state=?,error=? WHERE id=? AND state='queued'").bind(state,error.definite?'发布失败：GitHub 未接受发布任务，请核对 App 安装、仓库权限与工作流配置后重试。':'工作流派发未确认，请核对 GitHub Actions 后再操作。',jobId).run();if(error.definite&&changed.meta.changes)await env.DB.prepare("UPDATE submissions SET state='pending' WHERE id=? AND state='publishing'").bind(id).run();return reviewJSON({job:jobId,state:changed.meta.changes?state:'running',message:changed.meta.changes?(error.definite?'发布失败：GitHub 未接受发布任务，请核对 App 安装、仓库权限与工作流配置后重试。':'工作流派发未确认，请检查 GitHub Actions，不要重复公开。'):'工作流已开始处理，请刷新队列查看。'},202);}
     return reviewJSON({job:jobId,state:'queued'},202);
   }catch(error){return reviewJSON({error:error.status?error.message:'审核服务暂不可用，请稍后重试',subject:error.status===403?user?.userId:undefined},error.status||503);}
 }
