@@ -334,5 +334,39 @@
     "origin": "其他",
     "answerStatus": "答案未核对",
     "url": "courses/nnu-1025009015/submissions/bd4d70f1-e5e0-4fa3-ba3e-2d9ec272ccee/3.docx"
+  },
+  {
+    "id": "upload-e817053e-8de1-461f-b434-d427c31cdbb6-0",
+    "submissionId": "e817053e-8de1-461f-b434-d427c31cdbb6",
+    "publishJobId": "a3d78f9d-b5c0-4e1d-8fda-57beb96e5f23",
+    "courseId": "nnu-1025000057",
+    "title": "习思想复习提纲+题目",
+    "type": "其他资料",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-24",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1025000057/submissions/e817053e-8de1-461f-b434-d427c31cdbb6/0.zip"
+  },
+  {
+    "id": "upload-e817053e-8de1-461f-b434-d427c31cdbb6-1",
+    "submissionId": "e817053e-8de1-461f-b434-d427c31cdbb6",
+    "publishJobId": "a3d78f9d-b5c0-4e1d-8fda-57beb96e5f23",
+    "courseId": "nnu-1025000057",
+    "title": "习思想复习提纲+题目",
+    "type": "其他资料",
+    "year": "年份未注明",
+    "source": "同学投稿（原始来源未独立核实）",
+    "license": "授权未核实",
+    "permission": "unverified",
+    "reviewStatus": "approved",
+    "added": "2026-10-24",
+    "origin": "其他",
+    "answerStatus": "答案未核对",
+    "url": "courses/nnu-1025000057/submissions/e817053e-8de1-461f-b434-d427c31cdbb6/1.zip"
   }
 ]
